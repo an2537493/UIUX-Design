@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B-End Design System | 企业级电商后台设计规范</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            DEFAULT: '#1677FF', // Blue-6
+                            hover: '#4096FF',   // Blue-5
+                            active: '#0958D9',  // Blue-7
+                            bg: '#E6F4FF',      // Blue-1
+                            border: '#BAE0FF',  // Blue-2
+                        },
+                        success: '#52C41A',
+                        warning: '#FAAD14',
+                        error: '#FF4D4F',
+                        neutral: {
+                            50: '#F9FAFB',
+                            200: '#E5E7EB',
+                            300: '#D1D5DB',
+                            500: '#6B7280',
+                            900: '#1F2937',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #1F2937;
+            overflow-x: hidden;
+        }
+
+        /* 自定义原生滚动条 (尽量弱化，交由右侧组件控制) */
+        ::-webkit-scrollbar { width: 0px; } /* 彻底隐藏原生滚动条使界面更干净 */
+        
+        /* 视差入场动画样式 */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+        .delay-100 { transition-delay: 100ms; }
+        .delay-200 { transition-delay: 200ms; }
+        .delay-300 { transition-delay: 300ms; }
+
+        /* 返回上一级按钮 (毛玻璃样式) */
+        .back-btn {
+            position: fixed; top: 24px; left: 32px; z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            width: 44px; height: 44px;
+            color: #64748B; text-decoration: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px);
+            border: 1px solid #E2E8F0; box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            transition: all 0.3s ease;
+        }
+        .back-btn svg { width: 22px; height: 22px; transition: transform 0.3s ease; }
+        .back-btn:hover { color: #1677FF; border-color: #1677FF; background: #E6F4FF; }
+        .back-btn:hover svg { transform: translateX(-3px); }
+
+        /* 回到顶部小组件 */
+        .top-btn { 
+            position: fixed; z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+            width: 44px; height: 44px;
+            color: #64748B; text-decoration: none;
+            border-radius: 50%; cursor: pointer;
+            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
+            border: 1px solid #E2E8F0; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            bottom: 40px; right: 40px; 
+            opacity: 0; pointer-events: none; transform: translateY(20px); 
+        }
+        .top-btn.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+        .top-btn:hover { color: #1677FF; border-color: #1677FF; background: #E6F4FF; }
+        .top-btn:hover svg { transform: translateY(-3px); }
+
+        /* ---------------- 右侧细条状可拖拽进度条 ---------------- */
+        .progress-track-wrapper {
+            position: fixed; right: 24px; top: 50%; transform: translateY(-50%);
+            width: 24px; height: 50vh; z-index: 9999; cursor: pointer;
+            display: flex; justify-content: center;
+        }
+        .progress-track-line {
+            position: relative; width: 4px; height: 100%; background: #E2E8F0; border-radius: 4px;
+            transition: background 0.3s;
+        }
+        .progress-track-wrapper:hover .progress-track-line {
+            background: #CBD5E1;
+        }
+        /* 蓝色胶囊滑块 */
+        .progress-bar-indicator {
+            position: absolute; left: -2px; width: 8px; height: 32px; 
+            background: #1677FF; border-radius: 4px; 
+            box-shadow: 0 2px 8px rgba(22, 119, 255, 0.4);
+            pointer-events: none; /* 让鼠标事件穿透到轨道容器以方便计算 */
+            transition: top 0.1s ease-out; /* 非拖拽状态下的平滑跟随 */
+        }
+        .progress-track-wrapper:active .progress-bar-indicator {
+            background: #0958D9;
+            transform: scale(1.1);
+            transition: transform 0.2s, top 0s; /* 拖拽时取消Top过渡，保证零延迟跟手 */
+        }
+
+        @media (max-width: 1200px) {
+            .progress-track-wrapper { display: none; } /* 移动端隐藏侧边进度条 */
+            .back-btn { top: 16px; left: 16px; width: 36px; height: 36px; }
+            .back-btn svg { width: 18px; height: 18px; }
+            .top-btn { bottom: 20px; right: 20px; }
+        }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-[14px]">
+
+    <!-- 全局返回键 -->
+    <a href="#" class="back-btn" onclick="history.back(); return false;" title="返回上一级">
+        <i data-lucide="chevron-left"></i>
+    </a>
+
+    <!-- 回到顶部按钮 -->
+    <button id="backToTopBtn" class="top-btn" aria-label="回到顶部">
+        <i data-lucide="arrow-up" class="w-5 h-5 transition-transform duration-300"></i>
+    </button>
+
+    <!-- 右侧细条状滚动联动进度条 -->
+    <div class="progress-track-wrapper" id="progressTrack" title="拖动可快速滚动页面">
+        <div class="progress-track-line">
+            <div class="progress-bar-indicator" id="progressIndicator"></div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="max-w-5xl mx-auto min-h-screen p-8 md:p-12 lg:p-20 overflow-hidden relative z-10">
+        
+        <div class="space-y-32">
+            <!-- ================= OVERVIEW ================= -->
+            <section id="overview" class="content-section flex flex-col items-center justify-center pt-8 text-center">
+                <div class="reveal w-20 h-20 bg-primary rounded-2xl shadow-lg shadow-blue-500/30 flex items-center justify-center text-white text-3xl font-bold mb-8 hover:scale-105 transition-transform duration-300">
+                    Ds
+                </div>
+                <h1 class="reveal delay-100 text-4xl font-bold text-gray-900 mb-4 tracking-tight">B-End Design System</h1>
+                <p class="reveal delay-200 text-gray-500 text-lg mb-2">一套专为企业级电商后台打造的 UI 设计规范。</p>
+                <p class="reveal delay-200 text-gray-500 mb-12">基于 <span class="text-primary font-medium">Atomic Design</span> 理念，确保设计的一致性、模块化与可维护性。</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-12 text-left">
+                    <!-- Card 1 -->
+                    <div class="reveal delay-100 bg-white rounded-2xl p-8 border border-neutral-100 flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:border-primary/30 group">
+                        <div class="w-12 h-12 rounded-full bg-primary-bg flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:bg-primary group-hover:text-white text-primary">
+                            <i data-lucide="palette" class="w-5 h-5 transition-colors"></i>
+                        </div>
+                        <h3 class="font-semibold text-gray-900 mb-2">品牌识别</h3>
+                        <p class="text-sm text-gray-500">以 #1677FF 为核心的专业色彩体系，传递理性与信任。</p>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="reveal delay-200 bg-white rounded-2xl p-8 border border-neutral-100 flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:border-primary/30 group">
+                        <div class="w-12 h-12 rounded-full bg-primary-bg flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:bg-primary group-hover:text-white text-primary">
+                            <i data-lucide="layout-template" class="w-5 h-5 transition-colors"></i>
+                        </div>
+                        <h3 class="font-semibold text-gray-900 mb-2">组件规范</h3>
+                        <p class="text-sm text-gray-500">包含 30+ 基础原子组件，覆盖表单、反馈、展示等全场景。</p>
+                    </div>
+                    <!-- Card 3 -->
+                    <div class="reveal delay-300 bg-white rounded-2xl p-8 border border-neutral-100 flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:border-primary/30 group">
+                        <div class="w-12 h-12 rounded-full bg-primary-bg flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:bg-primary group-hover:text-white text-primary">
+                            <i data-lucide="check-circle-2" class="w-5 h-5 transition-colors"></i>
+                        </div>
+                        <h3 class="font-semibold text-gray-900 mb-2">交互原则</h3>
+                        <p class="text-sm text-gray-500">定义清晰的 Hover、Focus、Active 状态，确保操作反馈即时准确。</p>
+                    </div>
+                </div>
+
+                <!-- Tip Box -->
+                <div class="reveal delay-300 w-full bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-12 text-left flex items-start space-x-3 hover:shadow-md transition-shadow">
+                    <i data-lucide="info" class="w-5 h-5 text-primary flex-shrink-0 mt-0.5"></i>
+                    <p class="text-[14px] text-primary leading-relaxed">
+                        <span class="font-semibold">设计原则 Tip：</span>所有的组件都遵循 4px 网格系统，界面间距请统一使用 4 的倍数 (如：4, 8, 12, 16, 24, 32px)。
+                    </p>
+                </div>
+
+                <a href="#colors" class="reveal delay-300 inline-flex bg-primary hover:bg-primary-hover text-white px-8 py-3.5 rounded-full font-medium items-center space-x-2 transition-all shadow-md hover:shadow-lg active:scale-95 group">
+                    <span>开始浏览规范</span>
+                    <i data-lucide="arrow-down" class="w-4 h-4 group-hover:translate-y-1 transition-transform"></i>
+                </a>
+            </section>
+
+            <!-- ================= COLORS ================= -->
+            <section id="colors" class="content-section scroll-mt-12">
+                <div class="reveal mb-8 border-b border-gray-200 pb-4">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-3 tracking-tight">色彩系统 (Colors)</h2>
+                    <p class="text-gray-500 text-sm">主色选用 #1677FF (Daybreak Blue)。不仅传达了科技与理性，同时在不同屏幕上具有良好的可读性和无障碍表现。</p>
+                </div>
+
+                <!-- Primary Colors -->
+                <div class="reveal bg-white border border-gray-100 rounded-2xl p-8 mb-8 shadow-sm hover:shadow-md transition-all hover:border-blue-100">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">品牌色 (Primary)</h3>
+                    <p class="text-gray-500 text-xs mb-6">用于主按钮、链接、高亮状态以及重要的视觉引导元素。</p>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div class="group flex flex-col cursor-pointer">
+                            <div class="h-24 rounded-t-lg bg-primary p-3 flex items-end transition-transform group-hover:-translate-y-1 shadow-inner">
+                                <span class="text-white text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity">#1677FF</span>
+                            </div>
+                            <div class="border border-t-0 border-gray-100 rounded-b-lg p-3 group-hover:bg-blue-50 transition-colors">
+                                <p class="font-bold text-gray-900 text-sm">Blue-6 (Primary)</p>
+                                <p class="text-xs text-gray-500 mt-1">常规 / 常驻</p>
+                            </div>
+                        </div>
+                        <div class="group flex flex-col cursor-pointer">
+                            <div class="h-24 rounded-t-lg bg-primary-hover p-3 flex items-end transition-transform group-hover:-translate-y-1 shadow-inner">
+                                <span class="text-white text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity">#4096FF</span>
+                            </div>
+                            <div class="border border-t-0 border-gray-100 rounded-b-lg p-3 group-hover:bg-blue-50 transition-colors">
+                                <p class="font-bold text-gray-900 text-sm">Blue-5 (Hover)</p>
+                                <p class="text-xs text-gray-500 mt-1">悬浮状态</p>
+                            </div>
+                        </div>
+                        <div class="group flex flex-col cursor-pointer">
+                            <div class="h-24 rounded-t-lg bg-primary-active p-3 flex items-end transition-transform group-hover:-translate-y-1 shadow-inner">
+                                <span class="text-white/80 text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity">#0958D9</span>
+                            </div>
+                            <div class="border border-t-0 border-gray-100 rounded-b-lg p-3 group-hover:bg-blue-50 transition-colors">
+                                <p class="font-bold text-gray-900 text-sm">Blue-7 (Active)</p>
+                                <p class="text-xs text-gray-500 mt-1">点击 / 激活</p>
+                            </div>
+                        </div>
+                        <div class="group flex flex-col cursor-pointer">
+                            <div class="h-24 rounded-t-lg bg-primary-bg p-3 flex items-end border border-b-0 border-gray-100 transition-transform group-hover:-translate-y-1">
+                                <span class="text-gray-400 text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity">#E6F4FF</span>
+                            </div>
+                            <div class="border border-t-0 border-gray-100 rounded-b-lg p-3 group-hover:bg-blue-50 transition-colors">
+                                <p class="font-bold text-gray-900 text-sm">Blue-1 (Bg)</p>
+                                <p class="text-xs text-gray-500 mt-1">浅色背景 / 选中项</p>
+                            </div>
+                        </div>
+                        <div class="group flex flex-col cursor-pointer">
+                            <div class="h-24 rounded-t-lg bg-primary-border p-3 flex items-end transition-transform group-hover:-translate-y-1">
+                                <span class="text-gray-500 text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity">#BAE0FF</span>
+                            </div>
+                            <div class="border border-t-0 border-gray-100 rounded-b-lg p-3 group-hover:bg-blue-50 transition-colors">
+                                <p class="font-bold text-gray-900 text-sm">Blue-2 (Border)</p>
+                                <p class="text-xs text-gray-500 mt-1">聚焦边框</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Functional Colors -->
+                <div class="reveal bg-white border border-gray-100 rounded-2xl p-8 mb-8 shadow-sm hover:shadow-md transition-all hover:border-gray-200">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">功能色 (Functional)</h3>
+                    <p class="text-gray-500 text-xs mb-6">用于明确的信息反馈：成功、警告、错误。</p>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="group flex flex-col cursor-pointer">
+                            <div class="h-24 rounded-t-lg bg-[#52C41A] p-3 flex items-end transition-transform group-hover:-translate-y-1 shadow-inner">
+                                <span class="text-white text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity">#52C41A</span>
+                            </div>
+                            <div class="border border-t-0 border-gray-100 rounded-b-lg p-3 group-hover:bg-gray-50 transition-colors">
+                                <p class="font-bold text-gray-900 text-sm">Success</p>
+                                <p class="text-xs text-gray-500 mt-1">成功 / 增长</p>
+                            </div>
+                        </div>
+                        <div class="group flex flex-col cursor-pointer">
+                            <div class="h-24 rounded-t-lg bg-[#FAAD14] p-3 flex items-end transition-transform group-hover:-translate-y-1 shadow-inner">
+                                <span class="text-white text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity">#FAAD14</span>
+                            </div>
+                            <div class="border border-t-0 border-gray-100 rounded-b-lg p-3 group-hover:bg-gray-50 transition-colors">
+                                <p class="font-bold text-gray-900 text-sm">Warning</p>
+                                <p class="text-xs text-gray-500 mt-1">警告 / 需注意</p>
+                            </div>
+                        </div>
+                        <div class="group flex flex-col cursor-pointer">
+                            <div class="h-24 rounded-t-lg bg-[#FF4D4F] p-3 flex items-end transition-transform group-hover:-translate-y-1 shadow-inner">
+                                <span class="text-white text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity">#FF4D4F</span>
+                            </div>
+                            <div class="border border-t-0 border-gray-100 rounded-b-lg p-3 group-hover:bg-gray-50 transition-colors">
+                                <p class="font-bold text-gray-900 text-sm">Error</p>
+                                <p class="text-xs text-gray-500 mt-1">失败 / 错误 / 删除</p>
+                            </div>
+                        </div>
+                        <div class="group flex flex-col cursor-pointer">
+                            <div class="h-24 rounded-t-lg bg-[#1677FF] p-3 flex items-end transition-transform group-hover:-translate-y-1 shadow-inner">
+                                <span class="text-white text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity">#1677FF</span>
+                            </div>
+                            <div class="border border-t-0 border-gray-100 rounded-b-lg p-3 group-hover:bg-gray-50 transition-colors">
+                                <p class="font-bold text-gray-900 text-sm">Link</p>
+                                <p class="text-xs text-gray-500 mt-1">超链接</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Neutral Colors -->
+                <div class="reveal bg-white border border-gray-100 rounded-2xl p-8 shadow-sm hover:shadow-md transition-all hover:border-gray-200">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">中性色 (Neutrals)</h3>
+                    <p class="text-gray-500 text-xs mb-6">用于文本、背景、边框。保持高对比度以确保可读性。</p>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div class="group flex flex-col cursor-pointer">
+                            <div class="h-24 rounded-t-lg bg-neutral-900 p-3 flex items-end transition-transform group-hover:-translate-y-1 shadow-inner">
+                                <span class="text-white/70 text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity">#1F2937</span>
+                            </div>
+                            <div class="border border-t-0 border-gray-100 rounded-b-lg p-3 group-hover:bg-gray-50 transition-colors">
+                                <p class="font-bold text-gray-900 text-sm">Gray-900</p>
+                                <p class="text-xs text-gray-500 mt-1">主标题 / 正文</p>
+                            </div>
+                        </div>
+                        <div class="group flex flex-col cursor-pointer">
+                            <div class="h-24 rounded-t-lg bg-neutral-500 p-3 flex items-end transition-transform group-hover:-translate-y-1 shadow-inner">
+                                <span class="text-white/80 text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity">#6B7280</span>
+                            </div>
+                            <div class="border border-t-0 border-gray-100 rounded-b-lg p-3 group-hover:bg-gray-50 transition-colors">
+                                <p class="font-bold text-gray-900 text-sm">Gray-500</p>
+                                <p class="text-xs text-gray-500 mt-1">次要文本 / 提示语</p>
+                            </div>
+                        </div>
+                        <div class="group flex flex-col cursor-pointer">
+                            <div class="h-24 rounded-t-lg bg-neutral-300 p-3 flex items-end transition-transform group-hover:-translate-y-1 shadow-inner">
+                                <span class="text-gray-600 text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity">#D1D5DB</span>
+                            </div>
+                            <div class="border border-t-0 border-gray-100 rounded-b-lg p-3 group-hover:bg-gray-50 transition-colors">
+                                <p class="font-bold text-gray-900 text-sm">Gray-300</p>
+                                <p class="text-xs text-gray-500 mt-1">边框 / 禁用状态</p>
+                            </div>
+                        </div>
+                        <div class="group flex flex-col cursor-pointer">
+                            <div class="h-24 rounded-t-lg bg-neutral-200 p-3 flex items-end transition-transform group-hover:-translate-y-1 shadow-inner">
+                                <span class="text-gray-500 text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity">#E5E7EB</span>
+                            </div>
+                            <div class="border border-t-0 border-gray-100 rounded-b-lg p-3 group-hover:bg-gray-50 transition-colors">
+                                <p class="font-bold text-gray-900 text-sm">Gray-200</p>
+                                <p class="text-xs text-gray-500 mt-1">分割线</p>
+                            </div>
+                        </div>
+                        <div class="group flex flex-col cursor-pointer">
+                            <div class="h-24 rounded-t-lg bg-neutral-50 p-3 flex items-end border border-b-0 border-gray-100 transition-transform group-hover:-translate-y-1">
+                                <span class="text-gray-400 text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity">#F9FAFB</span>
+                            </div>
+                            <div class="border border-t-0 border-gray-100 rounded-b-lg p-3 group-hover:bg-gray-50 transition-colors">
+                                <p class="font-bold text-gray-900 text-sm">Gray-50</p>
+                                <p class="text-xs text-gray-500 mt-1">全局背景 / 斑马线</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= TYPOGRAPHY ================= -->
+            <section id="typography" class="content-section scroll-mt-12">
+                <div class="reveal mb-8 border-b border-gray-200 pb-4">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-3 tracking-tight">排版 (Typography)</h2>
+                    <p class="text-gray-500 text-sm">使用 Inter / 系统默认无衬线字体。层级关系通过字号和字重区分。</p>
+                </div>
+
+                <div class="reveal bg-white border border-gray-100 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="text-lg font-bold text-gray-900 mb-6">字体层级 (Scale)</h3>
+                    
+                    <div class="flex flex-col">
+                        <!-- H1 -->
+                        <div class="flex items-center py-6 border-b border-gray-100 group hover:bg-slate-50 -mx-8 px-8 transition-colors">
+                            <div class="w-32 flex-shrink-0 transition-transform group-hover:translate-x-2">
+                                <span class="px-2 py-1 bg-slate-100 rounded text-slate-500 text-xs font-mono">H1 / 30px</span>
+                            </div>
+                            <div class="flex-1">
+                                <h1 class="text-[30px] leading-tight font-bold text-gray-900">The quick brown fox jumps over the lazy dog</h1>
+                            </div>
+                        </div>
+                        
+                        <!-- H2 -->
+                        <div class="flex items-center py-6 border-b border-gray-100 group hover:bg-slate-50 -mx-8 px-8 transition-colors">
+                            <div class="w-32 flex-shrink-0 transition-transform group-hover:translate-x-2">
+                                <span class="px-2 py-1 bg-slate-100 rounded text-slate-500 text-xs font-mono">H2 / 24px</span>
+                            </div>
+                            <div class="flex-1">
+                                <h2 class="text-[24px] leading-tight font-bold text-gray-900">The quick brown fox jumps over the lazy dog</h2>
+                            </div>
+                        </div>
+
+                        <!-- H3 -->
+                        <div class="flex items-center py-6 border-b border-gray-100 group hover:bg-slate-50 -mx-8 px-8 transition-colors">
+                            <div class="w-32 flex-shrink-0 transition-transform group-hover:translate-x-2">
+                                <span class="px-2 py-1 bg-slate-100 rounded text-slate-500 text-xs font-mono">H3 / 18px</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-[18px] leading-tight font-bold text-gray-900">The quick brown fox jumps over the lazy dog</h3>
+                            </div>
+                        </div>
+
+                        <!-- Body -->
+                        <div class="flex items-start py-6 border-b border-gray-100 group hover:bg-slate-50 -mx-8 px-8 transition-colors">
+                            <div class="w-32 flex-shrink-0 pt-0.5 transition-transform group-hover:translate-x-2">
+                                <span class="px-2 py-1 bg-slate-100 rounded text-slate-500 text-xs font-mono">Body / 14px</span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-[14px] leading-[22px] text-gray-700">默认正文文本 (Body Text)。B端界面通常使用 14px 作为基础字号，行高建议设置为 1.57 (22px) 以保证长时间阅读的舒适度。如商品管理页面的 SPU 列表详情等。</p>
+                            </div>
+                        </div>
+
+                        <!-- Caption -->
+                        <div class="flex items-start py-6 group hover:bg-slate-50 -mx-8 px-8 transition-colors rounded-b-2xl">
+                            <div class="w-32 flex-shrink-0 pt-0.5 transition-transform group-hover:translate-x-2">
+                                <span class="px-2 py-1 bg-slate-100 rounded text-slate-500 text-xs font-mono">Caption / 12px</span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-[12px] text-gray-500">辅助说明文本。用于表单提示、时间戳或次要信息。颜色通常使用 Neutral-500。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= BUTTONS ================= -->
+            <section id="buttons" class="content-section scroll-mt-12">
+                <div class="reveal mb-8 border-b border-gray-200 pb-4">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-3 tracking-tight">按钮 (Buttons)</h2>
+                    <p class="text-gray-500 text-sm">用于触发操作。按钮的设计应清晰表达操作的优先级。</p>
+                </div>
+
+                <!-- Button Types -->
+                <div class="reveal bg-white border border-gray-100 rounded-2xl p-8 mb-8 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">按钮类型 (Types)</h3>
+                    <p class="text-gray-500 text-xs mb-8">根据重要程度选择不同的按钮类型。主按钮在每个视图中通常只有一个。</p>
+                    
+                    <div class="flex flex-wrap items-center gap-5">
+                        <button class="bg-primary hover:bg-primary-hover text-white px-5 py-2 rounded-lg text-[14px] font-medium transition-all duration-200 active:scale-95 shadow-md shadow-blue-500/20 hover:shadow-lg">
+                            Primary Button
+                        </button>
+                        <button class="bg-white border border-gray-300 hover:text-primary hover:border-primary hover:bg-blue-50 text-gray-700 px-5 py-2 rounded-lg text-[14px] font-medium transition-all duration-200 active:scale-95 shadow-sm">
+                            Secondary
+                        </button>
+                        <button class="bg-white border border-dashed border-gray-300 hover:text-primary hover:border-primary hover:bg-blue-50 text-gray-700 px-5 py-2 rounded-lg text-[14px] font-medium transition-all duration-200 active:scale-95 shadow-sm">
+                            Dashed
+                        </button>
+                        <button class="bg-transparent hover:bg-gray-100 text-gray-700 px-5 py-2 rounded-lg text-[14px] font-medium transition-all duration-200 active:scale-95">
+                            Text Button
+                        </button>
+                        <button class="bg-transparent text-primary hover:text-primary-hover px-2 py-2 rounded-lg text-[14px] font-medium transition-all duration-200 active:scale-95">
+                            Link Button
+                        </button>
+                        <button class="bg-[#FFF2F0] border border-[#FFA39E] text-[#FF4D4F] hover:bg-[#FFCCC7] px-5 py-2 rounded-lg text-[14px] font-medium transition-all duration-200 active:scale-95 shadow-sm">
+                            Danger
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Button Sizes -->
+                <div class="reveal bg-white border border-gray-100 rounded-2xl p-8 mb-8 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">按钮尺寸 (Sizes)</h3>
+                    <p class="text-gray-500 text-xs mb-8">适配不同的布局密度。默认为 Medium。</p>
+                    
+                    <div class="flex flex-wrap items-end gap-6">
+                        <button class="bg-primary hover:bg-primary-hover text-white px-6 h-[40px] rounded-lg text-[16px] font-medium transition-all duration-200 active:scale-95 shadow-md shadow-blue-500/20">
+                            Large (40px)
+                        </button>
+                        <button class="bg-primary hover:bg-primary-hover text-white px-4 h-[32px] rounded-md text-[14px] font-medium transition-all duration-200 active:scale-95 shadow-md shadow-blue-500/20">
+                            Medium (32px)
+                        </button>
+                        <button class="bg-primary hover:bg-primary-hover text-white px-3 h-[24px] rounded text-[12px] font-medium transition-all duration-200 active:scale-95 shadow-sm">
+                            Small (24px)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Button States -->
+                <div class="reveal bg-white border border-gray-100 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">按钮状态 (States)</h3>
+                    <p class="text-gray-500 text-xs mb-8">交互反馈是用户体验的关键。包括 Hover, Active, Disabled。</p>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                        <div>
+                            <p class="text-xs text-gray-400 mb-3 uppercase tracking-wide">Normal</p>
+                            <button class="bg-primary hover:bg-primary-hover text-white px-5 h-[32px] rounded-md text-[14px] font-medium transition-all duration-200 active:scale-95 shadow-md shadow-blue-500/20">
+                                Submit
+                            </button>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 mb-3 uppercase tracking-wide">Loading</p>
+                            <button class="bg-primary/70 text-white px-5 h-[32px] rounded-md text-[14px] font-medium flex items-center shadow-sm cursor-wait" disabled>
+                                <i data-lucide="loader-2" class="w-4 h-4 mr-2 animate-spin"></i>
+                                Loading...
+                            </button>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 mb-3 uppercase tracking-wide">Disabled</p>
+                            <div class="flex space-x-3">
+                                <button class="bg-gray-100 text-gray-400 px-4 h-[32px] rounded-md text-[14px] font-medium cursor-not-allowed border border-gray-200 transition-colors">
+                                    Primary
+                                </button>
+                                <button class="bg-gray-50 text-gray-400 px-4 h-[32px] rounded-md text-[14px] font-medium cursor-not-allowed border border-gray-200 transition-colors">
+                                    Secondary
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 mb-3 uppercase tracking-wide">With Icon</p>
+                            <button class="bg-primary hover:bg-primary-hover text-white px-5 h-[32px] rounded-md text-[14px] font-medium flex items-center transition-all duration-200 active:scale-95 shadow-md shadow-blue-500/20 group">
+                                <i data-lucide="search" class="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform"></i>
+                                Search
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= INPUTS ================= -->
+            <section id="inputs" class="content-section scroll-mt-12">
+                <div class="reveal mb-8 border-b border-gray-200 pb-4">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-3 tracking-tight">输入录入 (Data Entry)</h2>
+                    <p class="text-gray-500 text-sm">标准化的表单控件，提供一致的输入体验和即时的校验反馈。</p>
+                </div>
+
+                <!-- Basic Input -->
+                <div class="reveal bg-white border border-gray-100 rounded-2xl p-8 mb-8 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">基本输入框 (Basic Input)</h3>
+                    <p class="text-gray-500 text-xs mb-8">用于单行文本输入。适用于 SPU 创建、物流发货单号录入等场景。</p>
+                    
+                    <div class="space-y-5 max-w-md">
+                        <input type="text" placeholder="请输入内容..." class="w-full h-[36px] px-3 border border-gray-300 rounded-lg text-[14px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder-gray-400">
+                        
+                        <div class="relative w-full group">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i data-lucide="search" class="w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors"></i>
+                            </div>
+                            <input type="text" placeholder="带图标的输入框 (例如: 搜索订单编号)" class="w-full h-[36px] pl-9 pr-3 border border-gray-300 rounded-lg text-[14px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder-gray-400">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input States -->
+                <div class="reveal bg-white border border-gray-100 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">输入状态 (States)</h3>
+                    <p class="text-gray-500 text-xs mb-8">展示不同的交互与校验状态。</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                        <div>
+                            <label class="block text-[14px] font-medium text-gray-700 mb-2">正常状态 (Normal)</label>
+                            <input type="text" placeholder="Placeholder text" class="w-full h-[36px] px-3 border border-gray-300 rounded-lg text-[14px] outline-none hover:border-primary transition-all placeholder-gray-400">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-[14px] font-medium text-gray-700 mb-2">错误状态 (Error)</label>
+                            <input type="text" value="Invalid Input" class="w-full h-[36px] px-3 border border-[#FF4D4F] rounded-lg text-[14px] text-[#FF4D4F] outline-none focus:ring-2 focus:ring-[#FF4D4F]/20 transition-all bg-[#FFF2F0]/30 animate-[shake_0.5s_ease-in-out]">
+                            <p class="text-[12px] text-[#FF4D4F] mt-1.5 flex items-center">
+                                <i data-lucide="alert-circle" class="w-3 h-3 mr-1"></i> 此项为必填项 (如: SPU库存不可为空)
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-[14px] font-medium text-gray-700 mb-2">聚焦状态 (Focus)</label>
+                            <input type="text" value="用户正在输入..." class="w-full h-[36px] px-3 border border-primary ring-2 ring-primary/20 rounded-lg text-[14px] outline-none transition-all shadow-sm">
+                        </div>
+
+                        <div>
+                            <label class="block text-[14px] font-medium text-gray-700 mb-2">禁用状态 (Disabled)</label>
+                            <input type="text" value="read_only_data" disabled class="w-full h-[36px] px-3 border border-gray-200 bg-gray-50 text-gray-400 rounded-lg text-[14px] cursor-not-allowed">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= DATA DISPLAY ================= -->
+            <section id="data-display" class="content-section scroll-mt-12 pb-32">
+                <div class="reveal mb-8 border-b border-gray-200 pb-4">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-3 tracking-tight">数据展示与反馈 (Data Display)</h2>
+                    <p class="text-gray-500 text-sm">用于组织高密度信息和向用户传递系统状态。常见于订单列表、库存盘点页面。</p>
+                </div>
+
+                <!-- Badges -->
+                <div class="reveal bg-white border border-gray-100 rounded-2xl p-8 mb-8 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">状态徽标 (Badges)</h3>
+                    <p class="text-gray-500 text-xs mb-8">用于标记对象的状态（如订单状态、库存状态、满减活动状态）。</p>
+                    
+                    <div class="space-y-6">
+                        <!-- Tag Style -->
+                        <div class="flex flex-wrap gap-4">
+                            <span class="px-2.5 py-1 rounded-md text-[12px] font-medium bg-[#f6ffed] border border-[#b7eb8f] text-[#52C41A] hover:bg-[#52C41A] hover:text-white cursor-default transition-colors shadow-sm">Success</span>
+                            <span class="px-2.5 py-1 rounded-md text-[12px] font-medium bg-[#e6f4ff] border border-[#91caff] text-[#1677FF] hover:bg-[#1677FF] hover:text-white cursor-default transition-colors shadow-sm">Processing</span>
+                            <span class="px-2.5 py-1 rounded-md text-[12px] font-medium bg-[#fffbe6] border border-[#ffe58f] text-[#FAAD14] hover:bg-[#FAAD14] hover:text-white cursor-default transition-colors shadow-sm">Warning</span>
+                            <span class="px-2.5 py-1 rounded-md text-[12px] font-medium bg-[#fff2f0] border border-[#ffa39e] text-[#FF4D4F] hover:bg-[#FF4D4F] hover:text-white cursor-default transition-colors shadow-sm">Error</span>
+                            <span class="px-2.5 py-1 rounded-md text-[12px] font-medium bg-[#fafafa] border border-[#d9d9d9] text-gray-600 hover:bg-gray-200 cursor-default transition-colors shadow-sm">Default</span>
+                        </div>
+
+                        <!-- Dot Style -->
+                        <div class="flex flex-wrap gap-8 pt-4">
+                            <div class="flex items-center text-[14px] text-gray-700 font-medium group cursor-default">
+                                <span class="w-2 h-2 rounded-full bg-[#52C41A] mr-2 shadow-[0_0_5px_rgba(82,196,26,0.6)] group-hover:scale-150 transition-transform"></span> 在售中 (Online)
+                            </div>
+                            <div class="flex items-center text-[14px] text-gray-700 font-medium group cursor-default">
+                                <span class="w-2 h-2 rounded-full bg-[#1677FF] mr-2 shadow-[0_0_5px_rgba(22,119,255,0.6)] group-hover:scale-150 transition-transform"></span> 履约中 (Running)
+                            </div>
+                            <div class="flex items-center text-[14px] text-gray-700 font-medium group cursor-default">
+                                <span class="w-2 h-2 rounded-full bg-[#FF4D4F] mr-2 shadow-[0_0_5px_rgba(255,77,79,0.6)] group-hover:scale-150 transition-transform"></span> 已下架 (Offline)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="reveal bg-white border border-gray-100 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">表格样式 (Table)</h3>
+                    <p class="text-gray-500 text-xs mb-6">B端核心组件。强调清晰的分割线、对齐方式和鼠标悬停反馈。适配 SPU列表、订单列表场景。</p>
+                    
+                    <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr>
+                                    <th class="bg-gray-50 text-gray-600 font-semibold text-[13px] py-3.5 px-5 border-b border-gray-200">规则名称 / 订单编号</th>
+                                    <th class="bg-gray-50 text-gray-600 font-semibold text-[13px] py-3.5 px-5 border-b border-gray-200">描述 / 客户信息</th>
+                                    <th class="bg-gray-50 text-gray-600 font-semibold text-[13px] py-3.5 px-5 border-b border-gray-200">状态</th>
+                                    <th class="bg-gray-50 text-gray-600 font-semibold text-[13px] py-3.5 px-5 border-b border-gray-200 text-right">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="hover:bg-blue-50/50 transition-colors border-b border-gray-100 last:border-b-0 cursor-default group">
+                                    <td class="py-4 px-5 text-gray-900 font-medium">TradeCode_1 / ORD-2026-001</td>
+                                    <td class="py-4 px-5 text-gray-500 text-[13px]">这是一段关于该满减规则的简短描述...</td>
+                                    <td class="py-4 px-5">
+                                        <span class="px-2 py-0.5 rounded text-[12px] bg-[#f6ffed] border border-[#b7eb8f] text-[#52C41A]">已生效</span>
+                                    </td>
+                                    <td class="py-4 px-5 text-right">
+                                        <button class="text-primary font-medium hover:text-primary-hover active:scale-95 transition-all text-[14px] opacity-0 group-hover:opacity-100">配置 / 详情</button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-blue-50/50 transition-colors border-b border-gray-100 last:border-b-0 cursor-default group">
+                                    <td class="py-4 px-5 text-gray-900 font-medium">TradeCode_2 / ORD-2026-002</td>
+                                    <td class="py-4 px-5 text-gray-500 text-[13px]">门店商品调拨单流转说明...</td>
+                                    <td class="py-4 px-5">
+                                        <span class="px-2 py-0.5 rounded text-[12px] bg-[#e6f4ff] border border-[#91caff] text-[#1677FF]">待审核</span>
+                                    </td>
+                                    <td class="py-4 px-5 text-right">
+                                        <button class="text-primary font-medium hover:text-primary-hover active:scale-95 transition-all text-[14px] opacity-0 group-hover:opacity-100">配置 / 详情</button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-blue-50/50 transition-colors border-b border-gray-100 last:border-b-0 cursor-default group">
+                                    <td class="py-4 px-5 text-gray-900 font-medium">TradeCode_3 / ORD-2026-003</td>
+                                    <td class="py-4 px-5 text-gray-500 text-[13px]">该商品的库存预警配置细则...</td>
+                                    <td class="py-4 px-5">
+                                        <span class="px-2 py-0.5 rounded text-[12px] bg-[#fff2f0] border border-[#ffa39e] text-[#FF4D4F]">已驳回</span>
+                                    </td>
+                                    <td class="py-4 px-5 text-right">
+                                        <button class="text-primary font-medium hover:text-primary-hover active:scale-95 transition-all text-[14px] opacity-0 group-hover:opacity-100">配置 / 详情</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <script>
+        // 初始化 Lucide 图标
+        lucide.createIcons();
+
+        // 滚动视差与入场动画观察器 (Intersection Observer)
+        document.addEventListener("DOMContentLoaded", () => {
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.15 // 元素露出 15% 时触发动画
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                        // 触发后可以取消观察，让动画只执行一次
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            // 观察所有带有 reveal 类的元素
+            const revealElements = document.querySelectorAll('.reveal');
+            revealElements.forEach(el => observer.observe(el));
+
+            // 回到顶部按钮可见性控制
+            const backToTopBtn = document.getElementById('backToTopBtn');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 400) {
+                    backToTopBtn.classList.add('visible');
+                } else {
+                    backToTopBtn.classList.remove('visible');
+                }
+            });
+
+            // 回到顶部点击事件
+            backToTopBtn.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        /* ================= 右侧动态细条联动进度条 ================= */
+        const progressTrack = document.getElementById('progressTrack');
+        const progressIndicator = document.getElementById('progressIndicator');
+        const trackLine = document.querySelector('.progress-track-line');
+
+        let isDragging = false;
+
+        // 平滑更新滑块位置 (无级联动)
+        function updateThumbFromScroll() {
+            if (isDragging) return;
+            
+            // 获取文档真实可滚动的最大高度
+            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+            const scrollPercent = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+            
+            // 计算滑块在轨道内可移动的最大Top值
+            const maxTop = trackLine.offsetHeight - progressIndicator.offsetHeight;
+            
+            // 将滚动百分比映射到轨道上的Top值
+            progressIndicator.style.top = `${scrollPercent * maxTop}px`;
+        }
+
+        // 监听系统滚动与窗口变化
+        window.addEventListener('scroll', updateThumbFromScroll);
+        window.addEventListener('resize', updateThumbFromScroll);
+
+        /* ================= 进度条拖拽控制 (自由定位，不锁屏) ================= */
+        function updateScrollFromDrag(e) {
+            const trackRect = trackLine.getBoundingClientRect();
+            let y = e.clientY - trackRect.top; // 鼠标相对轨道的Y坐标
+            
+            // 计算滑块自身的偏移量，使鼠标点在滑块中心
+            const indicatorHeight = progressIndicator.offsetHeight;
+            const maxTopPx = trackRect.height - indicatorHeight;
+            
+            let indicatorY = y - (indicatorHeight / 2);
+            indicatorY = Math.max(0, Math.min(indicatorY, maxTopPx)); // 限制在轨道内
+            
+            // 更新滑块UI位置 (瞬间更新，无过渡)
+            progressIndicator.style.top = `${indicatorY}px`;
+            
+            // 根据拖动位置同步滚动页面
+            const percent = maxTopPx > 0 ? indicatorY / maxTopPx : 0;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            window.scrollTo({ top: percent * docHeight, behavior: 'auto' }); // behavior auto 保证拖动跟手零延迟
+        }
+
+        progressTrack.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            // 临时取消根元素的平滑滚动属性，防止拖拽产生迟滞感
+            document.documentElement.classList.remove('scroll-smooth');
+            document.body.style.userSelect = 'none'; // 拖动时禁止选中文字
+            updateScrollFromDrag(e);
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isDragging) updateScrollFromDrag(e);
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                document.body.style.userSelect = '';
+                // 恢复原生平滑滚动
+                document.documentElement.classList.add('scroll-smooth');
+            }
+        });
+
+        // 初始校准
+        setTimeout(updateThumbFromScroll, 100);
+
+    </script>
+</body>
+<!-- ... existing code ... -->
+</style>
+</head>
+<body>
+
+<!-- 全局返回键 (修改后：带锚点跳转，且使用原生SVG图标防止丢失) -->
+    <a href="index.html#page-5-expanded" class="back-btn" title="返回首页交互大屏">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6"/>
+        </svg>
+    </a>
+    <!-- 右侧点状滚动进度条 -->
+    <div id="progress-nav" title="拖动或点击切换页面"></div>
+<!-- ... existing code ... -->
+</html>

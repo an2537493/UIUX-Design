@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>开言社作品集 - 核心设计与流程</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ================= 全局基础样式 ================= */
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; padding: 0;
+            background-color: #FFFFFF;
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            width: 100vw; height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* 品牌色彩 */
+        .text-brand { color: #EFC519; }
+        .bg-brand { background-color: #EFC519; }
+        .text-brand-black { color: #1A1A1A; }
+        .bg-brand-black { background-color: #1A1A1A; }
+        .text-brand-yellow { color: #EFC519; }
+        .bg-brand-yellow { background-color: #EFC519; }
+
+        /* ================= 滚动与全屏框架 ================= */
+        .scroll-wrapper { width: 100vw; height: 100vh; overflow: hidden; position: relative; }
+        .scroll-container { width: 100%; height: 100%; transition: transform 0.9s cubic-bezier(0.77, 0, 0.175, 1); }
+        .section { width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden; }
+
+        /* ================= 右侧进度条 ================= */
+        .progress-nav {
+            position: fixed; right: 30px; top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 12px; z-index: 1000;
+            align-items: center; cursor: grab; padding: 20px 10px;
+        }
+        .progress-nav:active { cursor: grabbing; }
+        .progress-nav::before {
+            content: ''; position: absolute; top: 20px; bottom: 20px; left: 50%;
+            transform: translateX(-50%); width: 2px; background: #F1F5F9; z-index: -1; border-radius: 2px;
+        }
+        .progress-dot {
+            width: 4px; height: 14px; border-radius: 4px; background-color: #E2E8F0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none;
+        }
+        .progress-dot.active { height: 28px; background-color: #EFC519; }
+        .progress-nav:hover .progress-dot:not(.active) { background-color: #CBD5E1; }
+
+        /* ================= 核心画布 ================= */
+        .canvas-box {
+            width: 1920px; height: 1080px; background: transparent;
+            position: relative; display: flex; flex-shrink: 0;
+            transform-origin: center center;
+        }
+
+        /* ================= 通用动画 ================= */
+        @keyframes float-gentle { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }
+        @keyframes bobble { 0%, 100% { transform: rotate(-1deg) translateY(0); } 50% { transform: rotate(1deg) translateY(-3px); } }
+        @keyframes float-centered { 0%, 100% { transform: translate(-50%, -50%) translateY(0px); } 50% { transform: translate(-50%, -50%) translateY(-10px); } }
+        @keyframes particle-float { 0% { transform: translateY(0) scale(0); opacity: 0; } 50% { opacity: 0.6; transform: translateY(-30px) scale(1); } 100% { transform: translateY(-60px) scale(0); opacity: 0; } }
+        @keyframes scaleIn { from { transform: translate(-50%, -50%) scale(0); } to { transform: translate(-50%, -50%) scale(1); } }
+
+        /* 入场过渡逻辑 (纯 CSS) */
+        .anim-element {
+            opacity: 0; transform: translateY(40px);
+            transition: opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .section.active .anim-element { opacity: 1; transform: translateY(0); }
+
+        /* ================= Section 1-4 通用手机与背景 ================= */
+        .timeline-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background-color: #E5E7EB; z-index: 0; }
+        .phone-mockup {
+            width: 380px; height: 780px; background-color: #1a1a1a; border-radius: 50px;
+            padding: 12px; box-shadow: 0 50px 100px rgba(0,0,0,0.15); position: relative;
+            animation: float-gentle 6s ease-in-out infinite; max-width: 90vw; max-height: 90vh;
+        }
+        .phone-screen {
+            width: 100%; height: 100%; background-color: #FFFFFF; border-radius: 40px;
+            overflow: hidden; position: relative; display: block; font-family: 'PingFang SC', sans-serif;
+        }
+        .rationale-card { border-left: 6px solid #EFC519; transition: all 0.4s ease; }
+        .rationale-card:hover { transform: translateY(-5px) translateX(5px); box-shadow: 10px 20px 40px rgba(0,0,0,0.08); border-left-width: 10px; }
+        
+        .callout {
+            position: absolute; background: white; padding: 8px 12px; border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 6px;
+            font-size: 12px; font-weight: 700; color: #374151; z-index: 20;
+            border-left: 3px solid #EFC519; animation: bobble 4s ease-in-out infinite;
+            transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: default; white-space: nowrap;
+        }
+        .callout:hover { transform: scale(1.1) !important; box-shadow: 0 8px 25px rgba(0,0,0,0.15); animation-play-state: paused; }
+        .callout.style-2 { padding: 14px 20px 14px 24px; border-radius: 12px; font-size: 14px; border-left: none; }
+        .callout.style-2::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 6px; height: 20px; background-color: #EFC519; border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
+
+
+        /* ================= 13-01: 场景实战 专属 ================= */
+        .app-scroll-container { position: absolute; inset: 0; overflow-y: auto; scrollbar-width: none; background: white; }
+        .app-scroll-container::-webkit-scrollbar { display: none; }
+        .page-1301 .status-bar { position: absolute; top: 0; left: 0; width: 100%; height: 43px; display: flex; align-items: center; justify-content: space-between; padding: 0 19px; background: white; z-index: 100; font-weight: 600;}
+        .page-1301 .header-section-inner { position: absolute; top: 43px; left: 0; width: 100%; background: white; padding: 16px; box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.05); z-index: 99; }
+        .page-1301 .unit-card { background: linear-gradient(179.628deg, rgb(239, 197, 25) 1.4056%, rgb(249, 231, 162) 98.598%); border-radius: 20px; padding: 17px; position: relative; border: 1px solid rgba(253,199,0,0.2); }
+        .page-1301 .content-section { margin-top: 185px; padding: 0 20px 100px 20px; position: relative; }
+        .page-1301 .timeline-line-inner { position: absolute; left: 43px; top: 16px; width: 2px; height: 100%; background: linear-gradient(to bottom, #f3f4f6 0%, #f3f4f6 80%, rgba(0,0,0,0) 100%); }
+        .page-1301 .lesson-item { position: relative; margin-bottom: 32px; }
+        .page-1301 .lesson-simple { background: white; border: 1px solid #f9fafb; border-radius: 24px; padding: 21px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0px 4px 12px 0px rgba(0,0,0,0.03); margin-left: 48px; }
+        .page-1301 .check-icon { position: absolute; left: 0; top: 12px; width: 48px; height: 48px; background: #efc519; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0px 4px 6px 0px rgba(0,0,0,0.1); }
+        .page-1301 .main-lesson-card { background: linear-gradient(180deg, #FDE68A 0%, #FFFDE7 100%); border-radius: 32px; padding: 24px; position: relative; overflow: hidden; margin-left: 48px; box-shadow: 0px 10px 25px 0px rgba(253, 230, 138, 0.4); }
+        .page-1301 .tab-bar { position: absolute; bottom: 0; left: 0; width: 100%; height: 80px; background: white; border-top: 1px solid rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-around; padding-bottom: 20px; z-index: 100; }
+        .page-1301 .tab-icon img { width: 32px; height: 32px; object-fit: contain; }
+        .page-1301 .play-button { position: absolute; left: 0; top: 12px; width: 48px; height: 48px; background: black; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10; }
+
+        /* ================= 13-02: 听力填空 专属 ================= */
+        .page-1302 { display: flex; flex-direction: column; background: white; }
+        .page-1302 .status-bar { width: 100%; height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: white; z-index: 100; flex-shrink: 0; font-weight: 600; font-size: 15px;}
+        .page-1302 .header { width: 100%; height: 54px; background: white; z-index: 50; display: flex; align-items: center; padding: 0 20px; flex-shrink: 0; }
+        .page-1302 .back-button { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; background: transparent; border: none; margin-left: -8px; }
+        .page-1302 .progress-container { flex: 1; height: 30px; margin-left: 8px; position: relative; display: flex; align-items: center; }
+        .page-1302 .progress-track { width: 100%; height: 8px; background: #f3f4f6; border-radius: 999px; overflow: hidden; position: relative; }
+        .page-1302 .progress-fill { position: absolute; top: 0; left: 0; height: 100%; width: 30%; background: #efc519; border-radius: 999px; transition: width 0.3s ease; }
+        .page-1302 .main-content { flex: 1; position: relative; padding: 10px 20px; overflow: hidden; display: flex; flex-direction: column; }
+        .page-1302 .question-card { width: 100%; height: 230px; background: white; border: 2px solid #efc519; border-radius: 24px; box-shadow: 0px 10px 30px 0px rgba(0, 0, 0, 0.06); padding: 24px; margin-bottom: 20px; position: relative; display: flex; flex-direction: column; justify-content: space-between; flex-shrink: 0; }
+        .page-1302 .question-text { font-family: 'PingFang SC', sans-serif; font-weight: bold; font-size: 20px; line-height: 1.4; color: #1a1a1a; text-align: center; }
+        .page-1302 .blank-space { display: inline-block; width: 80px; height: 26px; background: #f3f4f6; border-radius: 6px; vertical-align: middle; margin: 0 6px; border-bottom: 2px solid #e5e7eb; transition: all 0.3s ease; }
+        .page-1302 .speaker-button { width: 52px; height: 52px; background: #fff9e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: all 0.2s ease; align-self: center; position: relative; }
+        .page-1302 .options-container { display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
+        .page-1302 .option-card { width: 100%; height: 56px; background: white; border: 2px solid #f0f0f0; border-radius: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; }
+        .page-1302 .option-card:hover { border-color: #efc519; background: #fffef8; transform: translateY(-2px); box-shadow: 0px 4px 12px 0px rgba(239, 197, 25, 0.15); }
+        .page-1302 .option-card.selected { border-color: #efc519; background: #fff9e0; }
+        .page-1302 .option-card.correct { border-color: #22c55e; background: #f0fdf4; }
+        .page-1302 .option-card.wrong { border-color: #ef4444; background: #fef2f2; }
+        .page-1302 .option-text { font-weight: 500; font-size: 16px; color: #1a1a1a; }
+        .page-1302 .bottom-bar { width: 100%; height: 34px; display: flex; align-items: center; justify-content: center; background: white; padding-bottom: 8px; flex-shrink: 0; }
+        .page-1302 .toast-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s; white-space: nowrap; }
+        .page-1302 .toast-message.show { opacity: 1; }
+
+        /* ================= 13-03: 空状态 专属 ================= */
+        .page-1303 .empty-state-combined { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; height: 300px; display: flex; align-items: center; justify-content: center; z-index: 20; animation: float-centered 3s ease-in-out infinite; cursor: pointer; }
+        .page-1303 .empty-state-combined img { width: 100%; height: 100%; object-fit: contain; }
+        .page-1303 .particle { position: absolute; width: 4px; height: 4px; background: #FFE167; border-radius: 50%; opacity: 0; animation: particle-float 3s ease-in-out infinite; }
+        
+        /* ================= 13-04: 数据报告 专属 ================= */
+        .page-1304 { display: flex; flex-direction: column; background: white; }
+        .page-1304 .status-bar { width: 100%; height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: white; z-index: 100; flex-shrink: 0; font-weight: 600; font-size: 15px;}
+        .page-1304 .header { width: 100%; height: 56px; background: white; z-index: 50; position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .page-1304 .back-button { position: absolute; left: 16px; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; background: transparent; border: none; transition: background 0.2s; }
+        .page-1304 .back-button:hover { background: #f9fafb; }
+        .page-1304 .header-title { font-weight: 500; font-size: 20px; color: #1a1a1a; }
+        .page-1304 .main-content { flex: 1; overflow-y: auto; padding: 20px 24px; scrollbar-width: none; -ms-overflow-style: none; }
+        .page-1304 .main-content::-webkit-scrollbar { display: none; }
+        .page-1304 .score-section { display: flex; flex-direction: column; align-items: center; margin-bottom: 32px; }
+        .page-1304 .score-circle-container { position: relative; width: 192px; height: 192px; margin-bottom: 24px; }
+        .page-1304 .score-circle { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .page-1304 .score-circle circle { fill: none; stroke-width: 12; }
+        .page-1304 .score-circle .background { stroke: #f3f4f6; }
+        .page-1304 .score-circle .progress { stroke: #efc519; stroke-linecap: round; transition: stroke-dashoffset 1.5s ease-out; }
+        .page-1304 .score-number { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: 'Inter', -apple-system, sans-serif; font-weight: 900; font-size: 88px; line-height: 1; color: #111827; }
+        .section.active .page-1304 .score-number { animation: scaleIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s backwards; }
+        .page-1304 .achievement-badge { height: 36px; background: #fff9e0; border-radius: 9999px; display: flex; align-items: center; padding: 0 16px; gap: 8px; }
+        .page-1304 .achievement-text { font-weight: bold; font-size: 14px; color: #b88e00; }
+        .page-1304 .stats-section { display: flex; flex-direction: column; gap: 24px; margin-bottom: 32px; }
+        .page-1304 .stat-item { display: flex; flex-direction: column; gap: 8px; }
+        .page-1304 .stat-header { display: flex; align-items: center; justify-content: space-between; }
+        .page-1304 .stat-label { display: flex; align-items: center; gap: 8px; }
+        .page-1304 .stat-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        .page-1304 .stat-icon.blue { background: #eff6ff; }
+        .page-1304 .stat-icon.green { background: #f0fdf4; }
+        .page-1304 .stat-icon.purple { background: #faf5ff; }
+        .page-1304 .stat-name { font-weight: bold; font-size: 14px; color: #374151; }
+        .page-1304 .stat-value { font-weight: 900; font-size: 14px; color: #111827; }
+        .page-1304 .stat-bar { width: 100%; height: 10px; background: #f3f4f6; border-radius: 9999px; overflow: hidden; }
+        .page-1304 .stat-bar-fill { height: 100%; border-radius: 9999px; transition: width 1s ease-out; width: 0%; }
+        .page-1304 .stat-bar-fill.blue { background: #3b82f6; }
+        .page-1304 .stat-bar-fill.green { background: #22c55e; }
+        .page-1304 .stat-bar-fill.purple { background: #a855f7; }
+        .page-1304 .feedback-card { background: linear-gradient(to bottom, #fffcf5 0%, white 100%); border: 1px solid #fff5d6; border-radius: 20px; padding: 20px; position: relative; overflow: hidden; margin-bottom: 20px; }
+        .page-1304 .feedback-card::before { content: ''; position: absolute; right: -21px; top: -21px; width: 100px; height: 100px; border-radius: 50px; background: radial-gradient(circle, rgba(239, 197, 25, 0.1) 0%, rgba(255, 255, 255, 0) 70%); }
+        .page-1304 .feedback-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .page-1304 .feedback-icon { width: 28px; height: 28px; background: #efc519; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
+        .page-1304 .feedback-title { font-weight: bold; font-size: 16px; color: #111827; }
+        .page-1304 .feedback-content { font-size: 14px; line-height: 1.6; color: #4b5563; }
+        .page-1304 .highlight { display: inline-block; background: rgba(239, 197, 25, 0.2); padding: 0 4px; border-radius: 4px; font-weight: bold; color: #111827; }
+        .page-1304 .bottom-bar { width: 100%; padding: 16px 24px 34px; background: white; border-top: 1px solid #f3f4f6; flex-shrink: 0; z-index: 50; }
+        .page-1304 .complete-button { width: 100%; height: 56px; background: #efc519; border-radius: 20px; border: none; box-shadow: 0px 4px 6px 0px rgba(239, 197, 25, 0.2), 0px 10px 15px 0px rgba(239, 197, 25, 0.2); font-weight: 600; font-size: 18px; color: black; cursor: pointer; transition: all 0.2s ease; }
+
+        /* ================= 13-05: 注册流程 专属 ================= */
+        .decor-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        .grid-pattern { position: absolute; inset: -100px; background-image: linear-gradient(#F3F4F6 1px, transparent 1px), linear-gradient(90deg, #F3F4F6 1px, transparent 1px); background-size: 60px 60px; opacity: 0.8; }
+        .shape-blob-1 { position: absolute; top: -100px; right: -100px; width: 700px; height: 700px; background: radial-gradient(circle, rgba(239, 197, 25, 0.06) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; }
+        .shape-blob-2 { position: absolute; bottom: -50px; left: -50px; width: 600px; height: 600px; background: radial-gradient(circle, rgba(26, 26, 26, 0.02) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; }
+
+        .phone-frame-small {
+            width: 180px; height: 360px; background: #FFFFFF; border: 5px solid #1A1A1A; border-radius: 24px;
+            position: relative; overflow: hidden; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.12); z-index: 20;
+            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.6s ease, border-color 0.4s ease;
+            transform-origin: center center; will-change: transform;
+        }
+        .screen-image { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .phone-wrapper {
+            position: absolute; display: flex; flex-direction: column; align-items: center; width: 180px;
+            opacity: 0; transform: translateY(40px); transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none; /* 默认禁用交互，等待动画完成 */
+        }
+        .section.active .phone-wrapper { opacity: 1; transform: translateY(0); }
+        .section.active.interactive .phone-wrapper { pointer-events: auto; /* 动画结束后开放交互 */ }
+
+        .section.has-focus .phone-wrapper:not(.focused-phone) { opacity: 0.08; filter: blur(8px) grayscale(1); transform: scale(0.85); transition: all 0.6s ease; }
+        .phone-wrapper.focused-phone { z-index: 100; }
+        .phone-wrapper.focused-phone .phone-frame-small { box-shadow: 0 100px 200px -40px rgba(0, 0, 0, 0.35), 0 0 120px rgba(239, 197, 25, 0.25); border-color: #1A1A1A; }
+        .desc-card {
+            margin-top: 14px; text-align: center; z-index: 15; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px);
+            padding: 8px 16px; border-radius: 12px; border: 1px solid #F3F4F6; box-shadow: 0 4px 15px rgba(0,0,0,0.04); white-space: nowrap;
+            transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, opacity 0.4s ease;
+        }
+        .phone-wrapper.focused-phone .desc-card { opacity: 0.3; border-color: #EFC519; }
+        .step-badge { display: block; color: #9CA3AF; font-weight: 700; font-size: 9px; margin-bottom: 3px; letter-spacing: 1px; }
+        .desc-title { font-size: 13px; font-weight: 900; color: #1A1A1A; }
+
+        .flow-label {
+            position: absolute; background: #FFFFFF; border: 1px solid #1A1A1A; padding: 6px 14px; border-radius: 50px;
+            font-size: 11px; font-weight: 800; color: #1A1A1A; box-shadow: 4px 4px 0 rgba(239, 197, 25, 0.2); z-index: 15;
+            white-space: nowrap; transform: translate(-50%, -50%) scale(0.8); opacity: 0; display: flex; align-items: center; gap: 6px;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .section.active .flow-label { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        .flow-label::before { content: ''; width: 6px; height: 6px; background: #EFC519; border-radius: 50%; display: inline-block; border: 1px solid #1A1A1A; }
+
+        .connector-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+        .flow-line { fill: none; stroke: #1A1A1A; stroke-width: 2; stroke-dasharray: 8 6; stroke-linecap: round; opacity: 0.3; stroke-dashoffset: 1000; }
+        @keyframes flowingDash { to { stroke-dashoffset: 0; } }
+        .section.active .flow-line { animation: flowingDash 40s linear infinite reverse 1s; }
+
+        .header-animate { opacity: 0; transform: translateY(-20px); transition: all 0.8s ease; }
+        .section.active .header-animate { opacity: 1; transform: translateY(0); }
+        .title-underline { width: 0; transition: width 1s ease 0.5s; }
+        .section.active .title-underline { width: 100%; }
+
+        .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; background: black; border-radius: 100px; z-index: 101;}
+
+        /* ================= Page 6 专属 ================= */
+        .p6-col-problem { padding: 150px 0 40px; position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; }
+        .p6-col-process { padding: 150px 50px 40px; position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; }
+        .p6-col-solution { padding: 150px 70px 40px; position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; }
+        .p6-section-tag { display: inline-block; padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 800; letter-spacing: 1px; margin-bottom: 16px; align-self: flex-start; }
+        .p6-tag-red { background: #FEE2E2; color: #EF4444; }
+        .p6-tag-blue { background: #DBEAFE; color: #3B82F6; }
+        .p6-tag-yellow { background: #1A1A1A; color: #EFC519; }
+        .p6-h2-title { font-size: 28px; font-weight: 900; color: #1A1A1A; margin-bottom: 12px; line-height: 1.2; width: 100%; text-align: left; }
+        .p6-desc-container { width: 100%; max-width: 320px; text-align: left; margin-bottom: 20px; }
+        .p6-popup-card { position: absolute; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); border: 1px solid #FFFFFF; box-shadow: 0 8px 24px -6px rgba(0,0,0,0.12); border-radius: 12px; padding: 14px; width: 180px; z-index: 30; transition: all 0.3s ease; }
+        .p6-popup-card:hover { transform: scale(1.05) translateY(-5px); z-index: 40; box-shadow: 0 15px 30px -6px rgba(0,0,0,0.15); }
+        .p6-phone-frame { border-radius: 20px; border: 4px solid; position: relative; overflow: hidden; box-shadow: 0 15px 30px rgba(0,0,0,0.1); background: #fff; transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.4s ease; cursor: pointer; }
+        .p6-phone-frame:hover { box-shadow: 0 30px 60px rgba(0,0,0,0.2); z-index: 50; }
+        .p6-phone-old { width: 210px; height: 420px; border-color: #D1D5DB; background: #F3F4F6; }
+        .p6-phone-blueprint-a { width: 180px; height: 360px; border-color: #1A1A1A; background: #FFFFFF; border-style: dashed; }
+        .p6-phone-blueprint-b { width: 180px; height: 360px; border-color: #EFC519; background: #FFFFFF; border-style: dashed; }
+        .p6-phone-final { width: 280px; height: 560px; border-color: #1A1A1A; background: #FFF; border-width: 7px; border-radius: 36px; box-shadow: 0 30px 60px rgba(239, 197, 25, 0.3); }
+        .p6-ui-skeleton-bar { height: 10px; background: #E5E7EB; border-radius: 4px; margin-bottom: 6px; }
+        .p6-ui-bad-card { background: white; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #E5E7EB; opacity: 0.6; }
+        .p6-error-mark { position: absolute; width: 26px; height: 26px; background: #EF4444; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; box-shadow: 0 4px 8px rgba(239,68,68,0.3); z-index: 10; animation: pulse 2s infinite; }
+        .p6-bp-line { border: 1px solid #D1D5DB; height: 36px; margin-bottom: 6px; border-radius: 4px; }
+        .p6-bp-circle { width: 26px; height: 26px; border: 1px solid #D1D5DB; border-radius: 50%; }
+        .p6-annotation-box { background: rgba(255,255,255,0.9); border: 1px solid #E5E7EB; padding: 10px; border-radius: 8px; font-size: 12px; color: #666; position: absolute; width: 160px; backdrop-filter: blur(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .section.active .p6-fade-in-up { opacity: 0; transform: translateY(30px); animation: p6-fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        @keyframes p6-fadeInUp { to { opacity: 1; transform: translateY(0); } }
+        .p6-header-animate { opacity: 0; transform: translateY(-20px); transition: all 0.8s ease; }
+        .section.active .p6-header-animate { opacity: 1; transform: translateY(0); }
+        .p6-plan-card-hover { transition: transform 0.3s ease; }
+        .p6-plan-card-hover:hover { transform: translateY(-8px); }
+
+        /* ================= Page 7 专属 ================= */
+        .page-7 { background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%); }
+        /* 取消canvas-box强制变形限制，采用自然高度适配 */
+        .page-7 .canvas-box { width: 100%; height: 100%; max-width: none; max-height: none; transform: none !important; align-items: center; justify-content: center;}
+        
+        .page-7 .p7-decor-layer { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+        .page-7 .p7-decor-plane-rect { position: absolute; bottom: 0; right: 0; width: 40vw; height: 50vh; background-color: #F1F5F9; border-top-left-radius: 60px; }
+        .page-7 .p7-decor-circle-lg { position: absolute; top: -100px; left: -100px; width: 50vw; height: 50vw; border: 1px dashed #E2E8F0; border-radius: 50%; max-width: 900px; max-height: 900px;}
+        .page-7 .p7-decor-line-v { position: absolute; top: 0; bottom: 0; left: 25%; width: 1px; background: linear-gradient(to bottom, transparent, #E2E8F0 20%, #E2E8F0 80%, transparent); }
+        .page-7 .p7-decor-dots-grid { position: absolute; top: 10vh; right: 8vw; width: 300px; height: 160px; background-image: radial-gradient(#CBD5E1 2px, transparent 2px); background-size: 24px 24px; }
+        .page-7 .p7-decor-plus-group { position: absolute; bottom: 10vh; left: 8vw; color: #EFC519; opacity: 0.4; font-family: monospace; font-size: 32px; line-height: 1.5; white-space: nowrap; }
+        
+        .page-7 .p7-bg-theme-overlay { position: absolute; inset: 0; background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); opacity: 0.6; z-index: 5; pointer-events: none; clip-path: inset(0 100% 0 0); will-change: clip-path; transition: opacity 0.8s ease; }
+        
+        /* 根据屏幕高度动态计算手机大小，绝对防溢出 */
+        .page-7 .p7-visual-area { position: relative; width: 100%; max-width: 1600px; display: flex; justify-content: center; align-items: center; gap: 4vw; z-index: 10; margin: 0 auto; height: 100%; padding: 0 5vw;}
+        
+        .page-7 .p7-global-scan-line { position: absolute; top: -10%; bottom: -10%; width: 2px; background: #EFC519; z-index: 50; pointer-events: none; box-shadow: 0 0 20px rgba(239, 197, 25, 0.8); left: 0%; will-change: left; opacity: 0; transition: opacity 0.3s ease;}
+        .section.active .page-7 .p7-global-scan-line { opacity: 1; }
+        .page-7 .p7-scan-knob { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; background: #FFFFFF; border: 4px solid #EFC519; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 51; display: flex; align-items: center; justify-content: center; }
+        .page-7 .p7-scan-knob::after { content: ""; width: 18px; height: 18px; background: #EFC519; border-radius: 50%; }
+        
+        .page-7 .p7-v-col { position: relative; display: flex; flex-direction: column; height: 60vh; max-height: 700px; aspect-ratio: 375 / 812; flex-shrink: 0; }
+        .page-7 .p7-v-col.stagger { transform: translateY(8vh); margin-top: 0; }
+        .page-7 .p7-mockup-compare-container { position: relative; width: 100%; height: 100%; background: #FFFFFF; border-radius: 30px; box-shadow: 0 40px 100px rgba(0,0,0,0.1), 0 4px 20px rgba(0,0,0,0.03); overflow: hidden; border: 6px solid #FFFFFF; }
+        
+        @media (max-width: 1200px) {
+            .page-7 .p7-mockup-compare-container { border-width: 4px; border-radius: 20px;}
+        }
+
+        .page-7 .p7-img-layer { position: relative; width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+        .page-7 .p7-layer-base { z-index: 1; filter: grayscale(100%) brightness(1.05) contrast(0.95); }
+        .page-7 .p7-layer-overlay { z-index: 2; position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; clip-path: inset(0 100% 0 0); will-change: clip-path; }
+        .page-7 .p7-layer-overlay img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        
+        .section.active .page-7 .p7-visual-area { opacity: 0; transform: translateY(40px); animation: p6-fadeInUp 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.2s; }
+
+        /* ================= Page 8 专属 ================= */
+        .page-8 .p8-diagonal-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-12deg) scale(1.15); width: 2800px; height: 1800px; display: flex; justify-content: center; gap: 40px; pointer-events: all; }
+        .page-8 .scroll-col { position: relative; width: 272px; display: flex; flex-direction: column; gap: 40px; transition: z-index 0s; }
+        .page-8 .scroll-col:hover { z-index: 40; }
+        .page-8 .col-track { display: flex; flex-direction: column; gap: 40px; padding-bottom: 40px; }
+        .page-8 .phone-frame-p8 { width: 272px; height: 598px; border-radius: 16px; box-shadow: 10px 20px 40px rgba(0,0,0,0.1); overflow: hidden; background: #f3f4f6; transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.4s ease; position: relative; cursor: pointer; flex-shrink: 0; will-change: transform; }
+        .page-8 .scroll-col:hover .col-track { animation-play-state: paused; }
+        .page-8 .phone-frame-p8:hover { transform: scale(1.1); box-shadow: 25px 50px 80px rgba(0,0,0,0.25); z-index: 50; }
+        .page-8 .phone-frame-p8 img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .page-8 .p8-header-animate { opacity: 0; transform: translateY(-20px); transition: all 0.8s ease 0.5s; }
+        .section.active .p8-header-animate { opacity: 1; transform: translateY(0); }
+        @keyframes p8-scroll-up { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
+        @keyframes p8-scroll-down { 0% { transform: translateY(-50%); } 100% { transform: translateY(0); } }
+
+        /* 返回上一级按钮 */ 
+        .back-btn { 
+            position: fixed; 
+            top: 40px; 
+            left: 40px; 
+            z-index: 2000; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            width: 44px; 
+            height: 44px; 
+            color: #64748B; 
+            text-decoration: none; 
+            border-radius: 50%; 
+            background: rgba(255, 255, 255, 0.8); 
+            backdrop-filter: blur(10px); 
+            border: 1px solid #E2E8F0; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03); 
+            transition: all 0.3s ease; 
+        } 
+        .back-btn svg { 
+            width: 22px; 
+            height: 22px; 
+            transition: transform 0.3s ease; 
+        } 
+        .back-btn:hover { 
+            color: #1A1A1A; 
+            border-color: #EFC519; 
+            background: #FFFBEB; 
+        } 
+        .back-btn:hover svg { 
+            transform: translateX(-3px); 
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- 返回上一级按钮 -->
+    <a href="javascript:history.back()" class="back-btn" title="返回上一级">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+    </a>
+
+    <!-- 右侧进度条 -->
+    <div class="progress-nav" id="progress-nav">
+        <div class="progress-dot active" title="01. 场景实战"></div>
+        <div class="progress-dot" title="02. 听力训练"></div>
+        <div class="progress-dot" title="03. 情感化设计"></div>
+        <div class="progress-dot" title="04. 多维能力画像"></div>
+        <div class="progress-dot" title="05. 用户注册流程"></div>
+        <div class="progress-dot" title="06. 改版设计阐述"></div>
+        <div class="progress-dot" title="07. 设计演进展示"></div>
+        <div class="progress-dot" title="08. 更多页面展示"></div>
+    </div>
+
+    <!-- 全屏滚动容器 -->
+    <div class="scroll-wrapper">
+        <div class="scroll-container" id="scroll-container">
+            
+            <!-- ================= Section 1: 13-01 (场景实战) ================= -->
+            <section class="section active" data-index="0">
+                <div class="canvas-box justify-center items-center">
+                    <div class="timeline-line"></div>
+                    <div class="absolute top-[180px] left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-4 border-brand rounded-full z-10 shadow-sm"></div>
+
+                    <div class="max-w-[1400px] w-full grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 relative z-10 px-6 lg:px-10">
+                        <!-- Left Rationale -->
+                        <div class="flex flex-col justify-center text-content-container relative anim-element" style="transition-delay: 0.1s;">
+                            <div class="absolute -top-[45px] -left-[8px] text-[140px] font-black text-gray-50 select-none pointer-events-none leading-none z-0">01</div>
+                            <div class="relative z-10">
+                                <div class="mb-8">
+                                    <span class="text-brand font-bold text-lg tracking-widest uppercase mb-2 block">phase1:discover</span>
+                                    <h1 class="text-5xl font-black text-gray-900 leading-tight mb-6">AI 场景实战：<br>职场进阶的演练场</h1>
+                                    <p class="text-gray-500 text-lg leading-relaxed mb-8">
+                                        我们将抽象的语言学习具象化为<span class="text-gray-900 font-bold">“职场通关游戏”</span>。通过结构化的课程列表与可视化的评分反馈，让用户清晰感知每一个微小的进步。
+                                    </p>
+                                </div>
+                                <div class="rationale-card bg-white border border-gray-100 rounded-xl p-8 shadow-lg relative overflow-hidden cursor-default group">
+                                    <div class="flex items-center gap-3 mb-4">
+                                        <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center text-brand">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                                        </div>
+                                        <h3 class="text-lg font-bold text-gray-800">设计思考：成就可视化</h3>
+                                    </div>
+                                    <p class="text-sm text-gray-600 leading-relaxed">通过 <span class="bg-yellow-100 px-1 rounded font-bold text-yellow-800">S/A/B 评级</span> 与 <span class="bg-yellow-100 px-1 rounded font-bold text-yellow-800">星级系统</span>，将用户的学习成果量化，驱动持续学习动力。</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Phone -->
+                        <div class="flex items-center justify-center lg:ml-10 phone-mockup-container anim-element" style="transition-delay: 0.3s;">
+                            <div class="phone-mockup">
+                                <div class="phone-screen page-1301">
+                                    <div class="app-scroll-container">
+                                        <div class="content-section">
+                                            <div class="timeline-line-inner"></div>
+                                            <!-- Lesson 1 -->
+                                            <div class="lesson-item">
+                                                <div class="check-icon"><svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M16.6667 5L7.5 14.1667L3.33333 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                                                <div class="lesson-simple">
+                                                    <div class="flex items-center gap-4">
+                                                        <div class="lesson-icon"><svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="#99A1AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                                                        <div class="lesson-title-text font-medium">自我介绍</div>
+                                                    </div>
+                                                    <span class="text-orange-500 font-bold bg-orange-50 w-7 h-7 flex items-center justify-center rounded-full text-xs">S</span>
+                                                </div>
+                                            </div>
+                                            <!-- Lesson 2 -->
+                                            <div class="lesson-item">
+                                                <div class="check-icon"><svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M16.6667 5L7.5 14.1667L3.33333 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                                                <div class="lesson-simple">
+                                                    <div class="flex items-center gap-4">
+                                                        <div class="lesson-icon"><svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M10 12H14M10 8H14M18 21H21M3 21H6M6 21V5C6 4.46957 6.21071 3.96086 6.58579 3.58579C6.96086 3.21071 7.46957 3 8 3H16C16.5304 3 17.0391 3.21071 17.4142 3.58579C17.7893 3.96086 18 4.46957 18 5V21" stroke="#99A1AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                                                        <div class="lesson-title-text font-medium">参观办公室</div>
+                                                    </div>
+                                                    <span class="text-orange-500 font-bold bg-orange-50 w-7 h-7 flex items-center justify-center rounded-full text-xs">A</span>
+                                                </div>
+                                            </div>
+                                            <!-- Main Challenge -->
+                                            <div class="lesson-item">
+                                                <div class="play-button"><div style="width: 0; height: 0; border-top: 8px solid transparent; border-left: 12px solid #EFC519; border-bottom: 8px solid transparent; margin-left: 4px;"></div></div>
+                                                <div class="main-lesson-card">
+                                                    <div class="flex justify-center gap-2 mb-6">
+                                                        <span class="bg-[#D9B44A]/20 text-[#856818] px-3 py-1 rounded-full text-[10px] font-bold">Daily Challenge</span>
+                                                        <span class="bg-[#FFF8E1] text-[#856818] px-3 py-1 rounded-full text-[10px] font-bold border border-[#F0E6C8]">Level 3</span>
+                                                    </div>
+                                                    <div class="w-14 h-14 bg-[#FFFDE7] rounded-2xl flex items-center justify-center mb-4 shadow-sm">
+                                                        <img src="C/13-01/image/icon_mic.png" alt="Mic" class="w-7 h-7 object-contain" onerror="this.src='https://cdn-icons-png.flaticon.com/512/708/708811.png'">
+                                                    </div>
+                                                    <h3 class="text-2xl font-bold text-[#1A1A1A] mb-1">商务谈判技巧</h3>
+                                                    <p class="text-base text-[#9CA3AF] mb-4">Negotiation Skills</p>
+                                                    
+                                                    <div class="flex items-end justify-between mt-8">
+                                                        <div class="flex flex-col gap-3">
+                                                            <div class="flex -space-x-2">
+                                                                <div class="w-6 h-6 rounded-full border-2 border-white bg-gray-200"></div>
+                                                                <div class="w-6 h-6 rounded-full border-2 border-white bg-gray-300"></div>
+                                                                <div class="w-6 h-6 rounded-full border-2 border-white bg-black text-white text-[8px] flex items-center justify-center font-bold">+2k</div>
+                                                            </div>
+                                                            <span class="text-[10px] text-[#9CA3AF] font-medium">15 min</span>
+                                                        </div>
+                                                        <button class="bg-black text-white pl-5 pr-2 py-2 rounded-full flex items-center gap-3 shadow-lg">
+                                                            <span class="text-sm font-bold">开始练习</span>
+                                                            <div class="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
+                                                                <svg class="w-3 h-3 text-white fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                                            </div>
+                                                        </button>
+                                                    </div>
+                                                    <div class="absolute right-6 top-20 opacity-10 pointer-events-none">
+                                                        <img src="C/13-01/image/icon_quote.png" alt="Quotes" class="w-[60px] h-[60px] object-contain" onerror="this.style.display='none'">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="status-bar"><div class="status-time">9:41</div><div class="flex items-center gap-1"><span class="text-[10px] font-bold">100%</span><div class="w-5 h-2.5 border border-black rounded-sm relative"><div class="absolute inset-0.5 bg-black w-3"></div></div></div></div>
+                                    <div class="header-section-inner">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <h1 class="text-xl font-bold">AI 陪练</h1>
+                                            <div class="w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center"><svg width="18" height="18" fill="none" viewBox="0 0 18 18"><path d="M2.25 9C2.25 12.727 5.273 15.75 9 15.75C12.727 15.75 15.75 12.727 15.75 9C15.75 5.273 12.727 2.25 9 2.25" stroke="black" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                                        </div>
+                                        <div class="unit-card">
+                                            <div class="flex justify-between items-center">
+                                                <div>
+                                                    <div class="flex gap-2 items-center mb-1"><span class="bg-black text-white px-2 py-0.5 rounded text-[10px] font-bold">UNIT 1</span><span class="text-[10px] text-gray-700">Level 3 · 谈判技巧</span></div>
+                                                    <h2 class="text-xl font-black">Business World</h2>
+                                                </div>
+                                                <div class="bg-white/60 px-3 py-1.5 rounded-full text-[10px] font-bold cursor-pointer">切换</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="tab-bar">
+                                        <div class="tab-icon"><img src="C/13-01/image/nav_study.png" alt="Study" onerror="this.src='https://placehold.co/32?text=1'"></div>
+                                        <div class="tab-icon scale-110"><img src="C/13-01/image/nav_ai.png" alt="AI" onerror="this.src='https://placehold.co/32?text=2'"></div>
+                                        <div class="tab-icon"><img src="C/13-01/image/nav_community.png" alt="Social" onerror="this.src='https://placehold.co/32?text=3'"></div>
+                                        <div class="tab-icon"><img src="C/13-01/image/nav_profile.png" alt="Me" onerror="this.src='https://placehold.co/32?text=4'"></div>
+                                    </div>
+                                    <div class="home-indicator"></div>
+                                </div>
+                                
+                                <div class="callout" style="top: 240px; left: -110px;"><span>S/A 级评分反馈</span></div>
+                                <div class="callout" style="top: 480px; right: -110px; border-left: none; border-right: 3px solid #EFC519; flex-direction: row-reverse;"><span>当前任务高亮</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= Section 2: 13-02 (听力训练) ================= -->
+            <section class="section" data-index="1">
+                <div class="canvas-box justify-center items-center">
+                    <div class="timeline-line"></div>
+                    <div class="absolute top-[180px] left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-4 border-brand rounded-full z-10 shadow-sm"></div>
+
+                    <div class="max-w-[1400px] w-full grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 relative z-10 px-6 lg:px-10">
+                        <!-- Left Rationale -->
+                        <div class="flex flex-col justify-center text-content-container relative anim-element" style="transition-delay: 0.1s;">
+                            <div class="absolute -top-[55px] -left-[8px] text-[140px] font-black text-gray-100 select-none pointer-events-none leading-none z-0">02</div>
+                            <div class="relative z-10">
+                                <div class="mb-8">
+                                    <span class="text-brand font-bold text-lg tracking-widest uppercase mb-2 block">phase2:practice</span>
+                                    <h1 class="text-5xl font-black text-gray-900 leading-tight mb-6">关键信息捕捉：<br>听力填空训练</h1>
+                                    <p class="text-gray-500 text-lg leading-relaxed mb-8">
+                                        摒弃传统填鸭式教学，通过高保真还原的职场录音，让用户在真实的语速与环境音中，锻炼捕捉关键信息的能力。
+                                    </p>
+                                </div>
+                                <div class="rationale-card bg-white border border-gray-100 rounded-xl p-8 shadow-lg relative overflow-hidden cursor-default group">
+                                    <div class="flex items-center gap-3 mb-4">
+                                        <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center text-brand transition-transform duration-500">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                                        </div>
+                                        <h3 class="text-lg font-bold text-gray-800">设计思考：心流体验</h3>
+                                    </div>
+                                    <p class="text-sm text-gray-600 leading-relaxed">去干扰化的 <span class="bg-yellow-100 px-1 rounded font-bold text-yellow-800">极简界面</span> 设计，配合 <span class="bg-yellow-100 px-1 rounded font-bold text-yellow-800">动态声纹</span> 反馈，引导用户进入专注的心流状态，提高听力效率。</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Phone -->
+                        <div class="flex items-center justify-center lg:ml-10 phone-mockup-container anim-element" style="transition-delay: 0.3s;">
+                            <div class="phone-mockup">
+                                <div class="phone-screen page-1302">
+                                    <div class="app-scroll-container">
+                                        <div class="status-bar">
+                                            <div class="status-time">9:41</div>
+                                            <div class="flex items-center gap-1.5">
+                                                <svg width="24" height="12" viewBox="0 0 24 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <rect x="1" y="1" width="20" height="10" rx="2.5" stroke="#1A1A1A" stroke-width="1.5"/>
+                                                    <rect x="3" y="3" width="16" height="6" rx="1.5" fill="#1A1A1A"/>
+                                                    <path d="M23 4C23 4 24 4.5 24 6C24 7.5 23 8 23 8" stroke="#1A1A1A" stroke-width="1.5" stroke-linecap="round"/>
+                                                </svg>
+                                            </div>
+                                        </div>
+
+                                        <div class="header">
+                                            <button class="back-button" id="backButton02">
+                                                <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                                    <path d="M12 19L5 12L12 5" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    <path d="M19 12H5" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                            </button>
+                                            <div class="progress-container">
+                                                <div class="progress-track">
+                                                    <div class="progress-fill" id="progressBar02"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="main-content">
+                                            <div class="question-card">
+                                                <div class="question-text">
+                                                    After hours of intense<br>
+                                                    discussion, the trade<br>
+                                                    <span class="blank-space" id="blankText02"></span> finally<br>
+                                                    reached a stalemate.
+                                                </div>
+                                                <button class="speaker-button" id="playAudioBtn02">
+                                                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                                        <path d="M11 5L6 9H2V15H6L11 19V5Z" stroke="#E6B000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                        <path d="M15.54 8.46C16.4774 9.39764 17.004 10.6692 17.004 11.995C17.004 13.3208 16.4774 14.5924 15.54 15.53" stroke="#E6B000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                        <path d="M19.07 4.93C20.9447 6.80528 21.9979 9.34836 21.9979 12C21.9979 14.6516 20.9447 17.1947 19.07 19.07" stroke="#E6B000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+
+                                            <div class="options-container">
+                                                <div class="option-card option-card-02" data-answer="Budget"><span class="option-text">Budget</span></div>
+                                                <div class="option-card option-card-02" data-answer="Negotiation"><span class="option-text">Negotiation</span></div>
+                                                <div class="option-card option-card-02" data-answer="Discount"><span class="option-text">Discount</span></div>
+                                                <div class="option-card option-card-02" data-answer="Report"><span class="option-text">Report</span></div>
+                                            </div>
+                                        </div>
+
+                                        <div class="bottom-bar">
+                                            <div class="home-indicator"></div>
+                                        </div>
+                                        <div id="toast02" class="toast-message">提示信息</div>
+                                    </div>
+                                </div>
+                                <div class="callout style-2" style="top: 240px; left: -110px; animation-delay: 0.5s;"><span>沉浸式听力训练</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= Section 3: 13-03 (情感化设计) ================= -->
+            <section class="section" data-index="2">
+                <div class="canvas-box justify-center items-center">
+                    <div class="timeline-line"></div>
+                    <div class="absolute top-[180px] left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-4 border-brand rounded-full z-10 shadow-sm"></div>
+
+                    <div class="max-w-[1400px] w-full grid grid-cols-1 lg:grid-cols-2 gap-20 relative z-10 px-10">
+                        <div class="flex flex-col justify-center text-content-container relative anim-element" style="transition-delay: 0.1s;">
+                            <div class="absolute -top-[55px] -left-[8px] text-[140px] font-black text-gray-100 select-none pointer-events-none leading-none z-0">03</div>
+                            <div class="relative z-10">
+                                <div class="mb-8">
+                                    <span class="text-brand font-bold text-lg tracking-widest uppercase mb-2 block">phase3:empty state</span>
+                                    <h1 class="text-5xl font-black text-gray-900 leading-tight mb-6">情感化设计：<br>空状态的温度</h1>
+                                    <p class="text-gray-500 text-lg leading-relaxed mb-8">即使在没有数据的“空状态”，也不应让用户感到冷落。我们通过萌趣的吉祥物和微动效，传递品牌的温度，缓解用户的挫败感。</p>
+                                </div>
+                                <div class="rationale-card bg-white border border-gray-100 rounded-xl p-8 shadow-lg relative overflow-hidden cursor-default group">
+                                    <div class="flex items-center gap-3 mb-4">
+                                        <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center text-brand transition-transform duration-500">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        </div>
+                                        <h3 class="text-lg font-bold text-gray-800">设计核心：情绪引导</h3>
+                                    </div>
+                                    <p class="text-sm text-gray-600 leading-relaxed">利用 <span class="bg-yellow-100 px-1 rounded font-bold text-yellow-800">品牌IP</span> 与 <span class="bg-yellow-100 px-1 rounded font-bold text-yellow-800">呼吸动效</span>，将原本枯燥的空白页面转化为一次有趣的品牌互动。</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-center phone-mockup-container anim-element lg:ml-10" style="transition-delay: 0.3s;">
+                            <div class="phone-mockup">
+                                <div class="phone-screen page-1303">
+                                    <div class="w-full h-full bg-gradient-to-b from-[#fffdf0] to-white relative overflow-hidden">
+                                        <div class="absolute top-0 w-full height-11 px-6 flex justify-between items-center mt-3 font-semibold text-sm">
+                                            <span>9:41</span>
+                                            <div class="flex gap-1.5 items-center"><svg width="16" height="12" viewBox="0 0 16 12" fill="black"><rect x="0" y="7" width="2" height="5"/><rect x="3" y="4" width="2" height="8"/><rect x="6" y="2" width="2" height="10"/><rect x="9" y="0" width="2" height="12"/></svg><div class="w-5 h-2.5 border border-black rounded-[2px] relative"><div class="absolute inset-0.5 bg-black w-[80%]"></div></div></div>
+                                        </div>
+                                        <div class="empty-state-combined">
+                                            <img src="C/13-03/image/empty_state_combined.png" alt="Empty State" onerror="this.src='https://cdn-icons-png.flaticon.com/512/7486/7486744.png'">
+                                        </div>
+                                        <div class="particle" style="left: 30%; top: 60%; animation-delay: 0s;"></div>
+                                        <div class="particle" style="left: 70%; top: 50%; animation-delay: 1s;"></div>
+                                        <div class="particle" style="left: 50%; top: 40%; animation-delay: 2s;"></div>
+                                        <div class="home-indicator"></div>
+                                    </div>
+                                </div>
+                                <div class="callout" style="top: 240px; left: -140px;"><span>IP 形象引导</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= Section 4: 13-04 (数据报告) ================= -->
+            <section class="section" data-index="3">
+                <div class="canvas-box justify-center items-center">
+                    <div class="timeline-line"></div>
+                    <div class="absolute top-[180px] left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-4 border-brand rounded-full z-10 shadow-sm"></div>
+
+                    <div class="max-w-[1400px] w-full grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 relative z-10 px-6 lg:px-10">
+                        <!-- Left Rationale -->
+                        <div class="flex flex-col justify-center text-content-container relative anim-element" style="transition-delay: 0.1s;">
+                            <div class="absolute -top-[55px] -left-[8px] text-[140px] font-black text-gray-100 select-none pointer-events-none leading-none z-0">04</div>
+                            <div class="relative z-10">
+                                <div class="mb-8">
+                                    <span class="text-brand font-bold text-lg tracking-widest uppercase mb-2 block">phase4:growth</span>
+                                    <h1 class="text-5xl font-black text-gray-900 leading-tight mb-6">智能评估：<br>多维能力画像</h1>
+                                    <p class="text-gray-500 text-lg leading-relaxed mb-8">
+                                        基于 AI 的实时语音 analysis，从单词、流利度、逻辑性三个维度生成专属能力画像。拒绝笼统评分，让每一次进步都清晰可见。
+                                    </p>
+                                </div>
+                                <div class="rationale-card bg-white border border-gray-100 rounded-xl p-8 shadow-lg relative overflow-hidden cursor-default group">
+                                    <div class="flex items-center gap-3 mb-4">
+                                        <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center text-brand transition-transform duration-500 group-hover:rotate-180">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        </div>
+                                        <h3 class="text-lg font-bold text-gray-800">设计思考：正向反馈</h3>
+                                    </div>
+                                    <p class="text-sm text-gray-600 leading-relaxed">通过 <span class="bg-yellow-100 px-1 rounded font-bold text-yellow-800">动态仪表盘</span> 与 <span class="bg-yellow-100 px-1 rounded font-bold text-yellow-800">成就徽章</span>，强化用户的成就感，将枯燥的复盘转化为期待的“开箱时刻”。</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Phone -->
+                        <div class="flex items-center justify-center lg:ml-10 phone-mockup-container anim-element" style="transition-delay: 0.3s;">
+                            <div class="phone-mockup">
+                                <div class="phone-screen page-1304">
+                                    <div class="report-container">
+                                        <div class="status-bar">
+                                            <div class="status-time">9:41</div>
+                                            <div class="flex items-center gap-1.5">
+                                                <svg width="24" height="12" viewBox="0 0 24 12" fill="none">
+                                                    <rect x="1" y="1" width="20" height="10" rx="2.5" stroke="#1A1A1A" stroke-width="1.5"/>
+                                                    <rect x="3" y="3" width="16" height="6" rx="1.5" fill="#1A1A1A"/>
+                                                    <path d="M23 4C23 4 24 4.5 24 6C24 7.5 23 8 23 8" stroke="#1A1A1A" stroke-width="1.5" stroke-linecap="round"/>
+                                                </svg>
+                                            </div>
+                                        </div>
+
+                                        <div class="header">
+                                            <button class="back-button" id="backButton04">
+                                                <svg width="28" height="28" fill="none" viewBox="0 0 28 28">
+                                                    <path d="M17.5 21L10.5 14L17.5 7" stroke="#111827" stroke-width="2.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                            </button>
+                                            <h1 class="header-title">训练报告</h1>
+                                        </div>
+
+                                        <div class="main-content">
+                                            <div class="score-section">
+                                                <div class="score-circle-container">
+                                                    <svg class="score-circle" viewBox="0 0 210 210">
+                                                        <circle class="background" cx="105" cy="105" r="96"></circle>
+                                                        <circle class="progress" cx="105" cy="105" r="96" stroke-dasharray="603.186" stroke-dashoffset="603.186" id="progressCircle04"></circle>
+                                                    </svg>
+                                                    <div class="score-number" id="scoreNumber04">0</div>
+                                                </div>
+                                                <div class="achievement-badge">
+                                                    <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
+                                                        <path d="M8 1.33333L9.66667 5.66667L14 6.33333L10.6667 9.33333L11.6667 14L8 11.6667L4.33333 14L5.33333 9.33333L2 6.33333L6.33333 5.66667L8 1.33333Z" stroke="#B88E00" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                                                        <path d="M13.3333 1.33333V4" stroke="#B88E00" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                                                        <path d="M14.6667 2.66667H12" stroke="#B88E00" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                                                        <path d="M2.66667 2.66667V4.66667" stroke="#B88E00" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    </svg>
+                                                    <span class="achievement-text">Perfect Negotiation!</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="stats-section">
+                                                <div class="stat-item">
+                                                    <div class="stat-header">
+                                                        <div class="stat-label">
+                                                            <div class="stat-icon blue">
+                                                                <svg width="18" height="18" fill="none" viewBox="0 0 18 18"><path d="M4.5 6L9 1.5L13.5 6V15C13.5 15.3978 13.342 15.7794 13.0607 16.0607C12.7794 16.342 12.3978 16.5 12 16.5H6C5.60218 16.5 5.22064 16.342 4.93934 16.0607C4.65804 15.7794 4.5 15.3978 4.5 15V6Z" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 9.75L9 4.5L12 9.75" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.825 8.25H11.1" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                            </div>
+                                                            <span class="stat-name">单词掌握</span>
+                                                        </div>
+                                                        <span class="stat-value">95%</span>
+                                                    </div>
+                                                    <div class="stat-bar"><div class="stat-bar-fill blue" data-width="95%"></div></div>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <div class="stat-header">
+                                                        <div class="stat-label">
+                                                            <div class="stat-icon green">
+                                                                <svg width="18" height="18" fill="none" viewBox="0 0 18 18"><path d="M15 6.75L6.75 15L3 11.25" stroke="#22C55E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 2.25L8.25 9L6.75 7.5" stroke="#22C55E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.25 7.5L12.75 9L15 6.75" stroke="#22C55E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                            </div>
+                                                            <span class="stat-name">流利度</span>
+                                                        </div>
+                                                        <span class="stat-value">88%</span>
+                                                    </div>
+                                                    <div class="stat-bar"><div class="stat-bar-fill green" data-width="88%"></div></div>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <div class="stat-header">
+                                                        <div class="stat-label">
+                                                            <div class="stat-icon purple">
+                                                                <svg width="18" height="18" fill="none" viewBox="0 0 18 18"><path d="M3 6.75L9 2.25L15 6.75V13.5C15 13.8978 14.842 14.2794 14.5607 14.5607C14.2794 14.842 13.8978 15 13.5 15H4.5C4.10218 15 3.72064 14.842 3.43934 14.5607C3.15804 14.2794 3 13.8978 3 13.5V6.75Z" stroke="#A855F7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.75 9.75H9" stroke="#A855F7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 9.75H12" stroke="#A855F7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.75 6H9" stroke="#A855F7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 6H15" stroke="#A855F7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                            </div>
+                                                            <span class="stat-name">逻辑性</span>
+                                                        </div>
+                                                        <span class="stat-value">90%</span>
+                                                    </div>
+                                                    <div class="stat-bar"><div class="stat-bar-fill purple" data-width="90%"></div></div>
+                                                </div>
+                                            </div>
+
+                                            <div class="feedback-card">
+                                                <div class="feedback-header">
+                                                    <div class="feedback-icon">
+                                                        <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M6 10L8 8L10 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 8V14" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="4" r="1.5" fill="white"/></svg>
+                                                    </div>
+                                                    <h2 class="feedback-title">AI 教练点评</h2>
+                                                </div>
+                                                <div class="feedback-content">你的发音非常清晰，尤其是对 <span class="highlight">check in</span> 的连读处理得很地道。回答逻辑紧扣问题，礼貌用语使用得当。建议在语调起伏上可以再自然一些。Keep going!</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="bottom-bar"><button class="complete-button">完成</button></div>
+                                        <div class="home-indicator"><div class="home-indicator-bar"></div></div>
+                                    </div>
+                                </div>
+                                <div class="callout style-2" style="top: 500px; right: -110px; animation-delay: 0.5s;"><span>多维能力画像</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= Section 5: 13-05 (注册流程设计) ================= -->
+            <section class="section" data-index="4">
+                <div class="canvas-box">
+                    <div class="decor-layer">
+                        <div class="grid-pattern"></div>
+                        <div class="shape-blob-1"></div>
+                        <div class="shape-blob-2"></div>
+                    </div>
+
+                    <div class="absolute top-[150px] right-[100px] w-20 h-20 border-4 border-brand-yellow rounded-full opacity-20"></div>
+                    <div class="absolute bottom-[100px] left-[50px] w-0 h-0 border-l-[30px] border-l-transparent border-r-[30px] border-r-transparent border-b-[50px] border-b-gray-200 transform rotate-12 opacity-50"></div>
+                    
+                    <div class="absolute top-12 left-10 z-50 header-animate">
+                        <h1 class="text-[36px] font-black text-black tracking-wider relative z-10 leading-tight">
+                            <span class="relative z-10">开言社 APP 用户注册流程设计</span>
+                            <span class="absolute bottom-1 left-0 h-4 bg-brand-yellow -z-10 opacity-80 title-underline"></span>
+                        </h1>
+                        <p class="text-[#9CA3AF] text-[10px] mt-1 font-medium tracking-[0.15em] uppercase">0-1 User Onboarding Strategy: Emotional & Personalized</p>
+                    </div>
+
+                    <div class="absolute top-4 right-10 text-8xl font-black text-gray-100 select-none z-0 opacity-80">05</div>
+
+                    <svg class="connector-layer">
+                        <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 L2,4 z" fill="#1A1A1A" opacity="0.4" /></marker></defs>
+                        <path class="flow-line" d="M 390 300 L 650 300" marker-end="url(#arrow)" />
+                        <path class="flow-line" d="M 830 300 L 1090 300" marker-end="url(#arrow)" />
+                        <path class="flow-line" d="M 1270 300 L 1530 300" marker-end="url(#arrow)" />
+                        <path class="flow-line" d="M 1710 300 L 1760 300 Q 1820 300 1820 400 L 1820 680 Q 1820 780 1760 780 L 1490 780" marker-end="url(#arrow)" />
+                        <path class="flow-line" d="M 1310 780 L 1050 780" marker-end="url(#arrow)" />
+                        <path class="flow-line" d="M 870 780 L 610 780" marker-end="url(#arrow)" />
+                    </svg>
+
+                    <!-- Labels 加快出现速度 -->
+                    <div class="flow-label" style="left: 520px; top: 300px; transition-delay: 0.1s;">IP 引导建立信任</div>
+                    <div class="flow-label" style="left: 960px; top: 300px; transition-delay: 0.2s;">极简验证通过</div>
+                    <div class="flow-label" style="left: 1400px; top: 300px; transition-delay: 0.3s;">锁定核心场景</div>
+                    <div class="flow-label" style="left: 1820px; top: 540px; transition-delay: 0.4s;">语义定级 · 降低压力</div>
+                    <div class="flow-label" style="left: 1180px; top: 780px; transition-delay: 0.5s;">构建兴趣图谱</div>
+                    <div class="flow-label" style="left: 740px; top: 780px; transition-delay: 0.6s;">AI 生成专属计划</div>
+
+                    <!-- Phones 加快出现速度 -->
+                    <div class="phone-wrapper" style="left: 210px; top: 120px; transition-delay: 0.1s;">
+                        <div class="phone-frame-small"><img src="C/13-05/image/step1.png" alt="启动页" class="screen-image" onerror="this.src='https://placehold.co/180x360/F3F4F6/9CA3AF?text=Step+1';"></div>
+                        <div class="desc-card"><span class="step-badge">STEP 01</span><h4 class="desc-title">品牌启动</h4></div>
+                    </div>
+                    <div class="phone-wrapper" style="left: 650px; top: 120px; transition-delay: 0.2s;">
+                        <div class="phone-frame-small"><img src="C/13-05/image/step2.png" alt="验证注册" class="screen-image" onerror="this.src='https://placehold.co/180x360/F3F4F6/9CA3AF?text=Step+2';"></div>
+                        <div class="desc-card"><span class="step-badge">STEP 02</span><h4 class="desc-title">极简双流注册</h4></div>
+                    </div>
+                    <div class="phone-wrapper" style="left: 1090px; top: 120px; transition-delay: 0.3s;">
+                        <div class="phone-frame-small"><img src="C/13-05/image/step3.png" alt="学习目标" class="screen-image" onerror="this.src='https://placehold.co/180x360/F3F4F6/9CA3AF?text=Step+3';"></div>
+                        <div class="desc-card"><span class="step-badge">STEP 03</span><h4 class="desc-title">场景选择</h4></div>
+                    </div>
+                    <div class="phone-wrapper" style="left: 1530px; top: 120px; transition-delay: 0.4s;">
+                        <div class="phone-frame-small"><img src="C/13-05/image/step4.png" alt="水平自测" class="screen-image" onerror="this.src='https://placehold.co/180x360/F3F4F6/9CA3AF?text=Step+4';"></div>
+                        <div class="desc-card"><span class="step-badge">STEP 04</span><h4 class="desc-title">语义化定级</h4></div>
+                    </div>
+                    <div class="phone-wrapper" style="left: 1310px; top: 600px; transition-delay: 0.5s;">
+                        <div class="phone-frame-small"><img src="C/13-05/image/step5.png" alt="兴趣选择" class="screen-image" onerror="this.src='https://placehold.co/180x360/F3F4F6/9CA3AF?text=Step+5';"></div>
+                        <div class="desc-card"><span class="step-badge">STEP 05</span><h4 class="desc-title">个性化数据源</h4></div>
+                    </div>
+                    <div class="phone-wrapper" style="left: 870px; top: 600px; transition-delay: 0.6s;">
+                        <div class="phone-frame-small"><img src="C/13-05/image/step6.png" alt="AI生成中" class="screen-image" onerror="this.src='https://placehold.co/180x360/F3F4F6/9CA3AF?text=Step+6';"></div>
+                        <div class="desc-card"><span class="step-badge">STEP 06</span><h4 class="desc-title">情感化等待</h4></div>
+                    </div>
+                    <div class="phone-wrapper" style="left: 430px; top: 600px; transition-delay: 0.7s;">
+                        <div class="phone-frame-small"><img src="C/13-05/image/step7.png" alt="专属首页" class="screen-image" onerror="this.src='https://placehold.co/180x360/F3F4F6/9CA3AF?text=Step+7';"></div>
+                        <div class="desc-card"><span class="step-badge">STEP 07</span><h4 class="desc-title">定制化首页 & 获得感</h4></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= Section 6: (改版设计阐述) ================= -->
+            <section class="section page-6" data-index="5">
+                <!-- P6 背景层：跟随section，确保在任何屏幕满屏铺开 -->
+                <div class="absolute inset-0 w-full h-full pointer-events-none z-0 flex">
+                    <div class="w-[28%] bg-gray-50 border-r border-gray-200 h-full"></div>
+                    <div class="w-[28%] bg-white border-r border-gray-200 h-full" style="background-image: radial-gradient(#E5E7EB 1px, transparent 1px); background-size: 20px 20px;"></div>
+                    <div class="w-[44%] bg-[#FFFCF5] h-full relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-[70%] h-full bg-[#EFC519]" style="clip-path: polygon(20% 0, 100% 0, 100% 100%, 0% 100%);"></div>
+                    </div>
+                </div>
+
+                <div class="canvas-box">
+                    <div class="absolute top-[50px] left-[60px] z-50 p6-header-animate">
+                        <h1 class="text-4xl font-black text-brand-black tracking-widest leading-none">
+                            <span class="relative inline-block z-10">
+                                项目改版
+                                <span class="absolute bottom-1 left-0 w-full h-4 bg-[#EFC519] -z-10 opacity-90"></span>
+                            </span>
+                            设计阐述
+                        </h1>
+                        <p class="text-[10px] text-gray-400 font-bold tracking-[0.3em] uppercase mt-1">UX CASE STUDY: FROM BORING LISTS TO AI CONVERSATION</p>
+                    </div>
+
+                    <div class="absolute top-[32px] right-[60px] z-10 pointer-events-none select-none">
+                        <span class="text-[128px] font-black text-white opacity-20 leading-none">06</span>
+                    </div>
+
+                    <!-- 内容三列布局 -->
+                    <div class="w-full h-full grid" style="grid-template-columns: 28% 28% 44%;">
+                        
+                        <!-- P6 COL 1: The Problem -->
+                        <div class="p6-col-problem">
+                            <div class="p6-desc-container p6-fade-in-up" style="animation-delay: 0.1s;">
+                                <span class="p6-section-tag p6-tag-red">01. 问题发现</span>
+                                <h2 class="p6-h2-title">用户流失痛点：<br>枯燥的列表式学习</h2>
+                                <p class="text-xs text-gray-500 mt-2 leading-relaxed">
+                                    传统英语学习应用多采用“填鸭式”教学，用户缺乏实际应用场景，导致学习动力在首周内急剧下降。<br><br>
+                                    数据显示，<span class="font-bold text-red-500">70%</span> 的用户因感到乏味而放弃。
+                                </p>
+                            </div>
+                            <div class="relative mt-14 p6-fade-in-up" style="animation-delay: 0.2s;">
+                                <div class="p6-phone-frame p6-phone-old p-4 flex flex-col transition-transform duration-300 hover:-translate-y-2">
+                                    <div class="w-full h-3 bg-gray-200 mb-4"></div>
+                                    <div class="w-1/2 h-5 bg-gray-300 mb-6 rounded"></div>
+                                    <div class="p6-ui-bad-card"><div class="p6-ui-skeleton-bar w-3/4"></div><div class="p6-ui-skeleton-bar w-1/2"></div></div>
+                                    <div class="p6-ui-bad-card"><div class="p6-ui-skeleton-bar w-2/3"></div><div class="p6-ui-skeleton-bar w-1/3"></div></div>
+                                    <div class="p6-ui-bad-card"><div class="p6-ui-skeleton-bar w-3/4"></div><div class="p6-ui-skeleton-bar w-1/2"></div></div>
+                                    <div class="p6-ui-bad-card"><div class="p6-ui-skeleton-bar w-1/2"></div></div>
+                                    <div class="p6-error-mark" style="top: 100px; right: 15px;">!</div>
+                                    <div class="p6-error-mark" style="top: 200px; right: 15px;">!</div>
+                                </div>
+                                <div class="p6-popup-card absolute transition-transform duration-300 hover:scale-105" style="top: 40px; left: -140px; border-left: 4px solid #9CA3AF;">
+                                    <div class="flex items-center gap-2 mb-1"><span class="w-2 h-2 rounded-full bg-gray-400"></span><span class="font-bold text-gray-800 text-xs">场景细化</span></div>
+                                    <p class="text-[10px] text-gray-600 leading-relaxed">用户面对的是冰冷的“单词列表”和机械的“跟读打分”。</p>
+                                </div>
+                                <div class="p6-popup-card absolute transition-transform duration-300 hover:scale-105" style="bottom: 60px; right: -140px; border-left: 4px solid #EF4444;">
+                                    <div class="flex items-center gap-2 mb-1"><span class="w-2 h-2 rounded-full bg-red-500"></span><span class="font-bold text-red-500 text-xs">问题核心</span></div>
+                                    <p class="text-[10px] text-gray-600 leading-relaxed">缺乏真实语境互动 (No Context)，导致 70% 用户快速流失。</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- P6 COL 2: Ideation -->
+                        <div class="p6-col-process">
+                            <div class="p6-desc-container p6-fade-in-up" style="animation-delay: 0.3s;">
+                                <span class="p6-section-tag p6-tag-blue">02. 方案探索</span>
+                                <h2 class="p6-h2-title">多方案探索与<br>设计推演</h2>
+                                <p class="text-sm text-gray-500 leading-relaxed">针对“缺乏互动”的问题，我们尝试了两种设计方向，旨在寻找最适合初学者的交互模型。</p>
+                            </div>
+                            <div class="flex gap-4 mt-2 p6-fade-in-up w-full justify-center" style="animation-delay: 0.4s;">
+                                <div class="relative p6-plan-card-hover rounded-xl p-2 transition-all">
+                                    <div class="text-[10px] font-bold text-gray-600 mb-2 text-center uppercase tracking-widest">Plan A</div>
+                                    <div class="p6-phone-frame p6-phone-blueprint-a p-4 flex flex-col justify-center gap-2">
+                                        <div class="p6-bp-circle mx-auto mb-3 w-10 h-10 border-gray-300"></div>
+                                        <div class="flex gap-2 justify-center">
+                                            <div class="p6-bp-line w-10 border-gray-300"></div>
+                                            <div class="p6-bp-line w-10 border-gray-300"></div>
+                                        </div>
+                                        <div class="mt-3 border border-gray-300 border-dashed h-14 rounded flex items-center justify-center text-gray-400 text-[10px]">Game UI</div>
+                                    </div>
+                                    <div class="mt-2 text-[10px] text-gray-500 text-center"><span class="font-bold">规则过重</span></div>
+                                </div>
+                                <div class="relative top-10 p6-plan-card-hover rounded-xl p-2 transition-all">
+                                    <div class="text-[10px] font-bold text-brand-yellow mb-2 text-center uppercase tracking-widest">Plan B</div>
+                                    <div class="p6-phone-frame p6-phone-blueprint-b p-4 flex flex-col justify-end">
+                                        <div class="p6-bp-line w-3/4 self-start rounded-tr-xl rounded-br-xl rounded-bl-xl bg-gray-100 border-none"></div>
+                                        <div class="p6-bp-line w-1/2 self-end rounded-tl-xl rounded-bl-xl rounded-br-xl bg-[#EFC519] border-none"></div>
+                                        <div class="h-6 mt-2 border-t border-gray-100 flex items-center justify-center text-[8px] text-gray-400">Chat Input</div>
+                                    </div>
+                                    <div class="mt-2 text-[10px] text-center"><span class="text-brand-yellow font-bold">符合直觉</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- P6 COL 3: Solution -->
+                        <div class="p6-col-solution">
+                            <div class="p6-desc-container relative z-10 p6-fade-in-up" style="animation-delay: 0.5s;">
+                                <span class="p6-section-tag p6-tag-yellow">03. 最终方案</span>
+                                <h2 class="p6-h2-title">沉浸式 AI 角色扮演<br>(Immersive Roleplay)</h2>
+                                <p class="text-sm text-brand-black leading-relaxed">
+                                    <span class="font-bold">最终策略：</span> 引入 IP“可可”作为陪练对象，利用气泡式对话流提供即时反馈，用户平均会话时长提升 <span class="bg-brand-black text-brand-yellow px-1">200%</span>。
+                                </p>
+                            </div>
+                            <div class="relative mt-4 w-full flex items-center justify-center gap-8 p6-fade-in-up" style="animation-delay: 0.6s;">
+                                <div class="p6-phone-frame p6-phone-final relative transition-transform duration-300 hover:-translate-y-2">
+                                    <img src="C/13-06/image/final_solution_v25.png" alt="Final App Interface" class="w-full h-full object-cover bg-gray-100" onerror="this.src='https://placehold.co/560x1120/F3F4F6/1A1A1A?text=HiFi+Mockup';">
+                                </div>
+                                <div class="space-y-6">
+                                    <div class="p6-annotation-box relative transition-transform duration-300 hover:scale-105" style="width: 180px; border-left: 4px solid #1A1A1A;">
+                                        <h4 class="font-bold text-xs text-brand-black">IP 情感化植入</h4>
+                                        <p class="text-[10px] text-gray-600 mt-1">头像与语气结合，消除机器冰冷感。</p>
+                                    </div>
+                                    <div class="p6-annotation-box relative transition-transform duration-300 hover:scale-105" style="width: 180px; border-left: 4px solid #1A1A1A;">
+                                        <h4 class="font-bold text-xs text-brand-black">即时纠错反馈</h4>
+                                        <p class="text-[10px] text-gray-600 mt-1">Speaking 结束后 0.5s 内给予建议。</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= Section 7: (设计演进展示) ================= -->
+            <section class="section page-7" data-index="6">
+                <!-- 取消 canvas-box 强行缩放限制，采用基于 vh 的自然响应式，完美贴合窗口边缘 -->
+                <div class="w-full h-full relative overflow-hidden flex items-center justify-center p7-anim-container">
+                    <div class="p7-decor-layer">
+                        <div class="p7-decor-plane-rect"></div>
+                        <div class="p7-decor-circle-lg"></div>
+                        <div class="p7-decor-line-v"></div>
+                        <div class="p7-decor-dots-grid"></div>
+                        <div class="p7-decor-plus-group">+ &nbsp;&nbsp; + &nbsp;&nbsp; +<br>+ &nbsp;&nbsp; + &nbsp;&nbsp; +</div>
+                    </div>
+                    
+                    <div class="p7-bg-theme-overlay" id="themeOverlay"></div>
+
+                    <!-- 扫描线：全局绝对定位左对齐，JS控制Left -->
+                    <div class="p7-global-scan-line" id="scanLine"><div class="p7-scan-knob"></div></div>
+
+                    <!-- 视觉展示区：高度限制以防溢出，宽度自动 -->
+                    <div class="p7-visual-area" id="visualArea">
+                        <div class="p7-v-col">
+                            <div class="p7-mockup-compare-container js-compare-item">
+                                <img src="C/13-07/image/ai_lo.png" class="p7-img-layer p7-layer-base" alt="AI Wireframe" onerror="this.src='https://placehold.co/375x812/F1F5F9/94A3B8?text=LowFi+AI';">
+                                <div class="p7-layer-overlay">
+                                    <img src="C/13-07/image/ai_hi.png" alt="AI HiFi" onerror="this.src='https://placehold.co/375x812/EFC519/FFFFFF?text=HiFi+AI';">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p7-v-col stagger">
+                            <div class="p7-mockup-compare-container js-compare-item">
+                                <img src="C/13-07/image/home_lo.jpg" class="p7-img-layer p7-layer-base" alt="Home Wireframe" onerror="this.src='https://placehold.co/375x812/F1F5F9/94A3B8?text=LowFi+Home';">
+                                <div class="p7-layer-overlay">
+                                    <img src="C/13-07/image/home_hi.png" alt="Home HiFi" onerror="this.src='https://placehold.co/375x812/EFC519/FFFFFF?text=HiFi+Home';">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p7-v-col">
+                             <div class="p7-mockup-compare-container js-compare-item">
+                                <img src="C/13-07/image/mine_lo.jpg" class="p7-img-layer p7-layer-base" alt="Mine Wireframe" onerror="this.src='https://placehold.co/375x812/F1F5F9/94A3B8?text=LowFi+Mine';">
+                                <div class="p7-layer-overlay">
+                                    <img src="C/13-07/image/mine_hi.png" alt="Mine HiFi" onerror="this.src='https://placehold.co/375x812/EFC519/FFFFFF?text=HiFi+Mine';">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p7-v-col stagger">
+                             <div class="p7-mockup-compare-container js-compare-item">
+                                <img src="C/13-07/image/group_lo.png" class="p7-img-layer p7-layer-base" alt="Group Wireframe" onerror="this.src='https://placehold.co/375x812/F1F5F9/94A3B8?text=LowFi+Group';">
+                                <div class="p7-layer-overlay">
+                                    <img src="C/13-07/image/group_hi.png" alt="Group HiFi" onerror="this.src='https://placehold.co/375x812/EFC519/FFFFFF?text=HiFi+Group';">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= Section 8: (更多页面展示) ================= -->
+            <section class="section page-8" data-index="7">
+                <div class="absolute inset-0 w-full h-full bg-[#FFFCF5] z-0"></div>
+                
+                <!-- 优化：将渐变遮罩放在外层绝对定位，彻底贴合真实窗口四边，确保无黑边/白边截断 -->
+                <div class="absolute inset-y-0 left-0 w-[20vw] z-[100] pointer-events-none" style="background: linear-gradient(to right, #FFFCF5 0%, rgba(255,252,245,0.8) 20%, rgba(255,252,245,0) 100%);"></div>
+                <div class="absolute inset-y-0 right-0 w-[20vw] z-[100] pointer-events-none" style="background: linear-gradient(to left, #FFFCF5 0%, rgba(255,252,245,0.8) 20%, rgba(255,252,245,0) 100%);"></div>
+                <div class="absolute inset-x-0 top-0 h-[10vh] z-[100] pointer-events-none" style="background: linear-gradient(to bottom, #FFFCF5 0%, rgba(255,252,245,0) 100%);"></div>
+                <div class="absolute inset-x-0 bottom-0 h-[10vh] z-[100] pointer-events-none" style="background: linear-gradient(to top, #FFFCF5 0%, rgba(255,252,245,0) 100%);"></div>
+                
+                <div class="canvas-box">
+                    <div class="p8-diagonal-wrapper" id="gridContainer">
+                        <div id="sourceCards" style="display: none;">
+                            <div class="phone-card-data" data-img="C/13-08/image/phone1.png" data-alt="首页"></div>
+                            <div class="phone-card-data" data-img="C/13-08/image/phone2.png" data-alt="连胜中心"></div>
+                            <div class="phone-card-data" data-img="C/13-08/image/phone3.png" data-alt="群聊"></div>
+                            <div class="phone-card-data" data-img="C/13-08/image/phone4.png" data-alt="消息中心"></div>
+                            <div class="phone-card-data" data-img="C/13-08/image/phone5.png" data-alt="评论页"></div>
+                            <div class="phone-card-data" data-img="C/13-08/image/phone6.png" data-alt="广场交流"></div>
+                            <div class="phone-card-data" data-img="C/13-08/image/phone7.png" data-alt="生词本"></div>
+                            <div class="phone-card-data" data-img="C/13-08/image/phone8.png" data-alt="VIP页面"></div>
+                            <div class="phone-card-data" data-img="C/13-08/image/phone9.png" data-alt="H5活动页"></div>
+                            <div class="phone-card-data" data-img="C/13-08/image/phone10.png" data-alt="轻社群"></div>
+                            <div class="phone-card-data" data-img="C/13-08/image/phone11.png" data-alt="广场主页"></div>
+                            <div class="phone-card-data" data-img="C/13-08/image/phone12.png" data-alt="人机对战"></div>
+                            <div class="phone-card-data" data-img="C/13-08/image/phone13.png" data-alt="课程中心"></div>
+                            <div class="phone-card-data" data-img="C/13-08/image/phone14.png" data-alt="旅行模式"></div>
+                        </div>
+                    </div>
+
+                    <div class="absolute left-[80px] top-[80px] z-[110] pointer-events-none p8-header-animate">
+                        <div class="absolute inset-[-20px] bg-[rgba(255,252,245,0.6)] backdrop-blur-md rounded-2xl z-[-1] opacity-80"></div>
+                        <div class="relative">
+                            <h1 class="text-5xl font-bold text-[#1a1a1a] tracking-[4px] whitespace-nowrap relative z-10">更多页面</h1>
+                        </div>
+                        <p class="text-xs font-bold text-[#6b7280] tracking-[4px] uppercase mt-2 pl-1">More pages collection</p>
+                    </div>
+
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+    <!-- ================= 脚本逻辑 ================= -->
+    <script>
+        // --- 画布缩放自适应 ---
+        function fitToScreen() {
+            const canvases = document.querySelectorAll('.canvas-box');
+            const targetW = 1920, targetH = 1080;
+            const windowW = window.innerWidth, windowH = window.innerHeight;
+            let scale = Math.min(windowW / targetW, windowH / targetH);
+            canvases.forEach(canvas => { 
+                // 第七页现在采用100%全屏外框控制自适应，不再直接缩放 canvas-box
+                if(!canvas.closest('.page-7')) {
+                    canvas.style.transform = `scale(${scale})`; 
+                }
+            });
+        }
+        window.addEventListener('resize', fitToScreen);
+
+        // --- 滚动与导航控制 ---
+        let currentSectionIndex = 0;
+        const sections = document.querySelectorAll('.section');
+        const totalSections = sections.length;
+        const scrollContainer = document.getElementById('scroll-container');
+        let lastScrollTime = 0;
+        let hasAnimated1304 = false;
+        let hasAnimated1307 = false; // 控制第7页入场动画
+        let p7AutoScanActive = false;
+        let interactiveTimer = null; 
+
+        function updateSectionStates(index, isImmediate = false) {
+            clearTimeout(interactiveTimer);
+            
+            sections.forEach((sec, idx) => {
+                if (idx === index) {
+                    sec.classList.add('active');
+                    if (idx === 4) { 
+                        if (sec.classList.contains('loaded')) {
+                            sec.classList.add('interactive');
+                        } else {
+                            sec.classList.remove('interactive');
+                            interactiveTimer = setTimeout(() => {
+                                sec.classList.add('interactive');
+                                sec.classList.add('loaded');
+                            }, 1400); 
+                        }
+                    } else {
+                        sec.classList.add('interactive');
+                        sec.classList.add('loaded');
+                    }
+                } else {
+                    sec.classList.remove('interactive');
+                    if (!sec.classList.contains('loaded')) {
+                        if (isImmediate) {
+                            sec.classList.remove('active');
+                        } else {
+                            setTimeout(() => sec.classList.remove('active'), 800);
+                        }
+                    }
+                }
+            });
+        }
+
+        // 第七页低保真到高保真动画
+        function animatePage7Entrance() {
+            if (hasAnimated1307) return;
+            hasAnimated1307 = true;
+            p7AutoScanActive = true;
+            
+            // 初始隐藏高保真图
+            updateScan(0);
+            
+            // 延迟一点等待页面切进来
+            setTimeout(() => {
+                let start = null;
+                const duration = 2000; // 动画时长2秒，平滑扫过屏幕
+                
+                function step(timestamp) {
+                    if (!start) start = timestamp;
+                    const progress = Math.min((timestamp - start) / duration, 1);
+                    
+                    // 缓动曲线 easeInOutCubic 使其两端平滑
+                    const ease = progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+                    
+                    updateScan(ease * window.innerWidth);
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(step);
+                    } else {
+                        p7AutoScanActive = false; // 动画结束，控制权交还给鼠标
+                    }
+                }
+                requestAnimationFrame(step);
+            }, 800); 
+        }
+
+        function scrollToSection(index) {
+            if (index < 0 || index >= totalSections) return;
+            currentSectionIndex = index;
+            scrollContainer.style.transition = 'transform 0.9s cubic-bezier(0.77, 0, 0.175, 1)';
+            scrollContainer.style.transform = `translateY(-${index * 100}vh)`;
+            
+            document.querySelectorAll('.progress-dot').forEach((dot, idx) => {
+                dot.classList.toggle('active', idx === index);
+            });
+            
+            updateSectionStates(index, false);
+
+            if (index === 3 && !hasAnimated1304) {
+                setTimeout(() => {
+                    animateCircle04();
+                    animateProgressBars04();
+                }, 600);
+                hasAnimated1304 = true;
+            }
+            if (index === 6) {
+                animatePage7Entrance();
+            }
+        }
+
+        window.addEventListener('wheel', (e) => {
+            if (isDraggingProgress) return;
+            const now = new Date().getTime();
+            if (now - lastScrollTime < 1000 || Math.abs(e.deltaY) < 30) return;
+            if (e.deltaY > 0 && currentSectionIndex < totalSections - 1) { scrollToSection(currentSectionIndex + 1); lastScrollTime = now; } 
+            else if (e.deltaY < 0 && currentSectionIndex > 0) { scrollToSection(currentSectionIndex - 1); lastScrollTime = now; }
+        }, { passive: true });
+
+        window.addEventListener('keydown', (e) => {
+            if (isDraggingProgress) return;
+            if (e.key === 'ArrowDown' || e.key === 'PageDown') { if (currentSectionIndex < totalSections - 1) scrollToSection(currentSectionIndex + 1); } 
+            else if (e.key === 'ArrowUp' || e.key === 'PageUp') { if (currentSectionIndex > 0) scrollToSection(currentSectionIndex - 1); }
+        });
+
+        // --- 进度条拖拽逻辑 ---
+        const progressNav = document.getElementById('progress-nav');
+        let isDraggingProgress = false;
+
+        function handleProgressDrag(e) {
+            const rect = progressNav.getBoundingClientRect();
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            let p = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+            const exactIndex = p * (totalSections - 1);
+            currentSectionIndex = Math.round(exactIndex);
+
+            scrollContainer.style.transform = `translateY(-${exactIndex * 100}vh)`;
+            document.querySelectorAll('.progress-dot').forEach((dot, idx) => { dot.classList.toggle('active', idx === currentSectionIndex); });
+
+            updateSectionStates(currentSectionIndex, true);
+            
+            if (currentSectionIndex === 3 && !hasAnimated1304) {
+                animateCircle04(); animateProgressBars04(); hasAnimated1304 = true;
+            }
+            if (currentSectionIndex === 6) {
+                animatePage7Entrance();
+            }
+        }
+
+        progressNav.addEventListener('mousedown', (e) => { isDraggingProgress = true; scrollContainer.style.transition = 'none'; handleProgressDrag(e); });
+        window.addEventListener('mousemove', (e) => { if (isDraggingProgress) handleProgressDrag(e); });
+        window.addEventListener('mouseup', () => { if (isDraggingProgress) { isDraggingProgress = false; scrollToSection(currentSectionIndex); } });
+        progressNav.addEventListener('touchstart', (e) => { isDraggingProgress = true; scrollContainer.style.transition = 'none'; handleProgressDrag(e); }, { passive: true });
+        window.addEventListener('touchmove', (e) => { if (isDraggingProgress) handleProgressDrag(e); }, { passive: true });
+        window.addEventListener('touchend', () => { if (isDraggingProgress) { isDraggingProgress = false; scrollToSection(currentSectionIndex); } });
+
+        // --- 13-05 手机放大交互视差 ---
+        const phones = document.querySelectorAll('.phone-wrapper');
+        const canvasCenter = { x: 960, y: 540 }; 
+        phones.forEach(phone => {
+            const frame = phone.querySelector('.phone-frame-small');
+            phone.addEventListener('mouseenter', () => {
+                phone.closest('.section').classList.add('has-focus');
+                phone.classList.add('focused-phone');
+                const dx = canvasCenter.x - (parseFloat(phone.style.left) + 90);
+                const dy = canvasCenter.y - (parseFloat(phone.style.top) + 180);
+                frame.style.transform = `translate(${dx}px, ${dy}px) scale(3.0)`;
+            });
+            phone.addEventListener('mouseleave', () => {
+                phone.closest('.section').classList.remove('has-focus');
+                phone.classList.remove('focused-phone');
+                frame.style.transform = `translate(0px, 0px) scale(1.0)`;
+            });
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX - window.innerWidth / 2) / 60;
+            const y = (e.clientY - window.innerHeight / 2) / 60;
+            document.querySelectorAll('.shape-blob-1, .shape-blob-2').forEach(item => {
+                item.style.transform = `translate(${x}px, ${y}px)`;
+            });
+        });
+
+        // --- 13-02 内部交互 ---
+        let currentProgress02 = 30;
+        function showToast02(message) {
+            const toast = document.getElementById('toast02');
+            if(!toast) return;
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 2000);
+        }
+        
+        const btnBack02 = document.getElementById('backButton02');
+        if(btnBack02) btnBack02.addEventListener('click', () => showToast02('返回课程列表'));
+
+        const playBtn02 = document.getElementById('playAudioBtn02');
+        if(playBtn02) {
+            playBtn02.addEventListener('click', function() {
+                this.style.transform = 'scale(0.9)';
+                setTimeout(() => this.style.transform = 'scale(1)', 100);
+                showToast02('正在播放录音...');
+            });
+        }
+
+        const correctAnswer02 = 'Negotiation';
+        const blankText02 = document.getElementById('blankText02');
+        document.querySelectorAll('.option-card-02').forEach(card => {
+            card.addEventListener('click', function() {
+                const answer = this.dataset.answer;
+                document.querySelectorAll('.option-card-02').forEach(c => {
+                    c.classList.remove('selected', 'correct', 'wrong');
+                });
+                this.classList.add('selected');
+                setTimeout(() => {
+                    if (answer === correctAnswer02) {
+                        this.classList.remove('selected');
+                        this.classList.add('correct');
+                        if(blankText02) {
+                            blankText02.textContent = answer;
+                            blankText02.style.background = 'transparent';
+                            blankText02.style.borderBottom = 'none';
+                            blankText02.style.color = '#EFC519';
+                            blankText02.style.width = 'auto';
+                            blankText02.style.padding = '0 4px';
+                        }
+                        showToast02('回答正确！+10分');
+                        currentProgress02 = Math.min(100, currentProgress02 + 20);
+                        const pb = document.getElementById('progressBar02');
+                        if(pb) pb.style.width = currentProgress02 + '%';
+                    } else {
+                        this.classList.remove('selected');
+                        this.classList.add('wrong');
+                        showToast02('答案错误，请重试');
+                    }
+                }, 400);
+            });
+        });
+
+        // --- 13-04 内部交互与动画 ---
+        function animateNumber04(element, target, duration = 1500) {
+            const start = 0;
+            const startTime = performance.now();
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+                const current = Math.floor(start + (target - start) * easeOutQuart);
+                if(element) element.textContent = current;
+                if (progress < 1) requestAnimationFrame(update);
+            }
+            requestAnimationFrame(update);
+        }
+
+        function animateProgressBars04() {
+            const bars = document.querySelectorAll('.page-1304 .stat-bar-fill');
+            bars.forEach((bar, index) => {
+                setTimeout(() => {
+                    const targetWidth = bar.getAttribute('data-width');
+                    if(bar) bar.style.width = targetWidth;
+                }, index * 150 + 500);
+            });
+        }
+
+        function animateCircle04() {
+            const circle = document.getElementById('progressCircle04');
+            const scoreNumber = document.getElementById('scoreNumber04');
+            if(!circle || !scoreNumber) return;
+            const r = 96;
+            const circumference = 2 * Math.PI * r; 
+            const score = 92;
+            const offset = circumference - (score / 100) * circumference;
+            circle.style.strokeDashoffset = circumference;
+            setTimeout(() => {
+                circle.style.strokeDashoffset = offset;
+                animateNumber04(scoreNumber, score);
+            }, 300);
+        }
+
+        // --- Page 7 比较动效逻辑 ---
+        const scanLine = document.getElementById('scanLine');
+        const themeOverlay = document.getElementById('themeOverlay');
+        const compareItems = document.querySelectorAll('.js-compare-item');
+
+        function updateScan(clientX) {
+            if (currentSectionIndex !== 6) return;
+            
+            // 按照屏幕宽度计算绝对百分比，用于拉动控制条和全局背景
+            let percent = (clientX / window.innerWidth) * 100;
+            
+            if (percent < 0) percent = 0;
+            if (percent > 100) percent = 100;
+
+            if(scanLine) scanLine.style.left = `${percent}%`;
+
+            if (themeOverlay) {
+                themeOverlay.style.clipPath = `inset(0 ${100 - percent}% 0 0)`;
+            }
+
+            // 每个手机容器内的图片遮罩独立计算自己的裁切比例
+            compareItems.forEach(item => {
+                const overlay = item.querySelector('.p7-layer-overlay');
+                if (!overlay) return;
+                const rect = item.getBoundingClientRect();
+                let itemPercent = ((clientX - rect.left) / rect.width) * 100;
+                if (itemPercent < 0) itemPercent = 0;
+                if (itemPercent > 100) itemPercent = 100;
+                overlay.style.clipPath = `inset(0 ${100 - itemPercent}% 0 0)`;
+            });
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            // 如果自动扫描动画还在播放中，不响应鼠标
+            if (currentSectionIndex === 6 && !p7AutoScanActive) {
+                updateScan(e.clientX);
+            }
+        });
+
+        // --- Page 8 无限滚动墙初始化 ---
+        function initGrid() {
+            const container = document.getElementById('gridContainer');
+            if(!container) return;
+            const sourceItems = Array.from(document.querySelectorAll('.phone-card-data'));
+            const columnCount = 7;
+            const columns = [];
+            
+            for (let i = 0; i < columnCount; i++) {
+                const col = document.createElement('div');
+                col.className = 'scroll-col';
+                const track = document.createElement('div');
+                track.className = 'col-track';
+                const isEven = (i % 2 === 1); 
+                const duration = 60 + (i * 8); 
+                const animName = isEven ? 'p8-scroll-down' : 'p8-scroll-up';
+                track.style.animation = `${animName} ${duration}s linear infinite`;
+                col.appendChild(track);
+                container.appendChild(col);
+                columns.push(track);
+            }
+
+            sourceItems.forEach((item, index) => {
+                const colIndex = index % columnCount;
+                const wrapper = document.createElement('div');
+                wrapper.className = 'phone-frame-p8';
+                const img = document.createElement('img');
+                img.src = item.dataset.img; 
+                img.alt = item.dataset.alt;
+                img.onerror = function() { this.src = `https://placehold.co/272x598/e2e8f0/1e293b?text=${encodeURIComponent(item.dataset.alt)}`; };
+                wrapper.appendChild(img);
+                columns[colIndex].appendChild(wrapper);
+            });
+
+            columns.forEach(track => {
+                while (track.children.length < 4) {
+                    Array.from(track.children).forEach(card => track.appendChild(card.cloneNode(true)));
+                }
+                Array.from(track.children).forEach(card => track.appendChild(card.cloneNode(true)));
+            });
+        }
+
+        // 初始化加载
+        window.addEventListener('DOMContentLoaded', () => {
+            fitToScreen();
+            initGrid();
+            // 确保初始加载第一页不穿帮
+            updateScan(0); 
+            updateSectionStates(currentSectionIndex, true);
+        });
+
+    </script>
+<!-- ... existing code ... -->
+    </style>
+</head>
+<body>
+
+    <!-- 返回上一级按钮 (跳转至index.html第三页并自动展开四宫格面板) -->
+    <a href="index.html#page-3" class="back-btn" title="返回上一级" onclick="sessionStorage.setItem('autoExpandPortfolio', 'true');">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+    </a>
+
+    <!-- 右侧进度条 -->
+    <div class="progress-nav" id="progress-nav">
+<!-- ... existing code ... -->
+</body>
+</html>

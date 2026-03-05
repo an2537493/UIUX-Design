@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B端电商后台改版 - 作品集总结</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#1677FF',
+                        dark: '#0F172A',
+                        textMain: '#334155',
+                        textSub: '#64748B',
+                        bgLight: '#F8FAFC',
+                        borderLight: '#E2E8F0',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #FFFFFF; color: #334155; }
+        
+        /* 自定义原生滚动条 (隐藏原生，交由右侧进度条接管体验) */
+        ::-webkit-scrollbar { width: 0px; }
+
+        /* 视差入场动画 */
+        .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+        .delay-100 { transition-delay: 100ms; }
+        .delay-200 { transition-delay: 200ms; }
+        .delay-300 { transition-delay: 300ms; }
+
+        /* 纯 CSS 模拟图表动画条 */
+        .bar-chart-item { transition: height 1s ease-out; }
+        .hover-card { transition: all 0.3s ease; }
+        .hover-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -8px rgba(0,0,0,0.05); }
+
+        /* 报价卡片样式 */
+        .quote-card { position: relative; z-index: 1; }
+        .quote-card::before {
+            content: '"'; position: absolute; top: -10px; left: 10px;
+            font-size: 60px; color: #E6F4FF; font-family: serif; z-index: -1;
+        }
+
+        /* 返回上一级按钮 */
+        .back-btn {
+            position: fixed; top: 40px; left: 40px; z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+            width: 44px; height: 44px;
+            color: #64748B; text-decoration: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px);
+            border: 1px solid #E2E8F0; box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            transition: all 0.3s ease;
+        }
+        .back-btn svg { width: 22px; height: 22px; transition: transform 0.3s ease; }
+        /* 保持蓝色主题 */
+        .back-btn:hover { color: #1677FF; border-color: #1677FF; background: #E6F4FF; }
+        .back-btn:hover svg { transform: translateX(-3px); }
+
+        /* 回到顶部按钮 */
+        .top-btn {
+            position: fixed; bottom: 40px; right: 40px; z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+            width: 44px; height: 44px;
+            color: #64748B; text-decoration: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px);
+            border: 1px solid #E2E8F0; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            opacity: 0; pointer-events: none; transform: translateY(20px);
+            cursor: pointer;
+        }
+        .top-btn svg { width: 22px; height: 22px; transition: transform 0.3s ease; }
+        .top-btn.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+        .top-btn:hover { color: #1677FF; border-color: #1677FF; background: #E6F4FF; }
+        .top-btn:hover svg { transform: translateY(-3px); }
+
+        /* ---------------- 右侧细条状可拖拽进度条 ---------------- */
+        .progress-track-wrapper {
+            position: fixed; right: 24px; top: 50%; transform: translateY(-50%);
+            width: 24px; height: 50vh; z-index: 9999; cursor: pointer;
+            display: flex; justify-content: center;
+        }
+        .progress-track-line {
+            position: relative; width: 4px; height: 100%; background: #E2E8F0; border-radius: 4px;
+            transition: background 0.3s;
+        }
+        .progress-track-wrapper:hover .progress-track-line {
+            background: #CBD5E1;
+        }
+        .progress-bar-indicator {
+            position: absolute; left: -2px; width: 8px; height: 32px; 
+            background: #1677FF; border-radius: 4px; 
+            box-shadow: 0 2px 8px rgba(22, 119, 255, 0.4);
+            pointer-events: none; 
+            transition: top 0.1s ease-out; 
+        }
+        .progress-track-wrapper:active .progress-bar-indicator {
+            background: #0958D9;
+            transform: scale(1.1);
+            transition: transform 0.2s, top 0s; /* 拖拽时取消Top过渡，保证零延迟跟手 */
+        }
+
+        @media (max-width: 1200px) {
+            .progress-track-wrapper { display: none; }
+        }
+        
+        @media (max-width: 768px) {
+            .back-btn { top: 80px; left: 16px; width: 36px; height: 36px; }
+            .back-btn svg { width: 18px; height: 18px; }
+            .top-btn { bottom: 20px; right: 20px; width: 36px; height: 36px; }
+            .top-btn svg { width: 18px; height: 18px; }
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-primary selection:text-white relative">
+
+    <!-- 悬浮返回按钮 -->
+    <a href="#" class="back-btn" aria-label="返回上一级" onclick="history.back(); return false;">
+        <i data-lucide="chevron-left"></i>
+    </a>
+
+    <!-- 回到顶部按钮 -->
+    <button id="backToTopBtn" class="top-btn" aria-label="回到顶部">
+        <i data-lucide="arrow-up"></i>
+    </button>
+
+    <!-- 右侧细条状滚动联动进度条 -->
+    <div class="progress-track-wrapper" id="progressTrack" title="拖动可快速滚动页面">
+        <div class="progress-track-line">
+            <div class="progress-bar-indicator" id="progressIndicator"></div>
+        </div>
+    </div>
+
+    <!-- 导航栏 (用于模拟网页头部) -->
+    <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <!-- 移除左侧 Logo，保留右侧导航链接 -->
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-end">
+            <div class="hidden md:flex space-x-8 text-sm font-medium text-textSub">
+                <a href="#section1" class="hover:text-primary transition-colors">数据规律挖掘</a>
+                <a href="#section2" class="hover:text-primary transition-colors">结果验证看板</a>
+                <a href="#section3" class="hover:text-primary transition-colors">项目总结复盘</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主体内容 -->
+    <main class="max-w-6xl mx-auto px-6 sm:px-12">
+
+        <!-- ================= SECTION 1: 引导用户挖掘数据规律 ================= -->
+        <!-- min-h-[calc(100vh-4rem)] 确保单个板块至少占满整个屏幕高度 (减去导航栏高度) -->
+        <section id="section1" class="min-h-[calc(100vh-4rem)] flex flex-col justify-center py-16 scroll-mt-16">
+            <div class="reveal mb-16">
+                <h3 class="text-sm font-semibold text-primary tracking-widest uppercase mb-3">Data Visualization</h3>
+                <h2 class="text-3xl md:text-4xl font-bold text-dark mb-4">引导用户挖掘数据规律</h2>
+                <p class="text-lg text-textSub max-w-3xl">直观洞察信息价值，从「被动记录」转向「主动决策」。</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                <!-- 左侧：理论说明 -->
+                <div class="lg:col-span-4 space-y-10">
+                    <div class="reveal delay-100">
+                        <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-5">
+                            <i data-lucide="layers" class="text-primary w-6 h-6"></i>
+                        </div>
+                        <h4 class="text-xl font-semibold text-dark mb-3">构成类：规律显性化</h4>
+                        <p class="text-textMain leading-relaxed mb-4">将黑盒化的审核逻辑与库存状态透明化。</p>
+                        <div class="p-4 bg-bgLight rounded-lg border border-borderLight text-sm text-textSub">
+                            <span class="font-semibold text-dark">价值：</span>帮助业务从宏观视角快速识别自动化瓶颈，定位异常根源。
+                        </div>
+                    </div>
+
+                    <div class="reveal delay-200">
+                        <div class="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center mb-5">
+                            <i data-lucide="arrow-left-right" class="text-green-600 w-6 h-6"></i>
+                        </div>
+                        <h4 class="text-xl font-semibold text-dark mb-3">对比类：决策闭环验证</h4>
+                        <p class="text-textMain leading-relaxed mb-4">建立优化前后的直观参照系。</p>
+                        <div class="p-4 bg-bgLight rounded-lg border border-borderLight text-sm text-textSub">
+                            <span class="font-semibold text-dark">价值：</span>用数据量化体验升级带来的商业价值（如时效提升），辅助管理决策。
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：图表展示 (使用 HTML/CSS 模拟骨架设计) -->
+                <div class="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <!-- Chart 1: 趋势与柱状图 -->
+                    <div class="reveal delay-100 hover-card bg-white border border-borderLight rounded-2xl p-6 shadow-sm">
+                        <h5 class="text-sm font-medium text-dark mb-6">支付金额构成分析趋势</h5>
+                        <div class="relative h-48 flex items-end justify-between px-2">
+                            <!-- SVG 线条模拟 -->
+                            <svg class="absolute inset-0 h-full w-full" preserveAspectRatio="none">
+                                <path d="M 10 100 Q 50 20, 100 80 T 200 60 T 300 120" fill="none" stroke="#10B981" stroke-width="2" />
+                                <path d="M 10 120 Q 50 60, 100 100 T 200 140 T 300 100" fill="none" stroke="#F59E0B" stroke-width="2" stroke-dasharray="4 4" />
+                            </svg>
+                            <!-- 柱状图 -->
+                            <div class="w-8 bg-blue-500/80 rounded-t h-[60%] z-10"></div>
+                            <div class="w-8 bg-blue-500/80 rounded-t h-[80%] z-10"></div>
+                            <div class="w-8 bg-blue-500/80 rounded-t h-[40%] z-10"></div>
+                            <div class="w-8 bg-blue-500/80 rounded-t h-[70%] z-10"></div>
+                            <div class="w-8 bg-blue-500/80 rounded-t h-[50%] z-10"></div>
+                            <div class="w-8 bg-blue-500/80 rounded-t h-[90%] z-10"></div>
+                        </div>
+                        <div class="flex justify-between mt-3 text-xs text-textSub px-2">
+                            <span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>周五</span><span>周六</span>
+                        </div>
+                    </div>
+
+                    <!-- Chart 2: 客户价值模型 (雷达图模拟) -->
+                    <div class="reveal delay-200 hover-card bg-white border border-borderLight rounded-2xl p-6 shadow-sm flex flex-col items-center justify-center">
+                        <h5 class="text-sm font-medium text-dark mb-4 w-full text-left">客户价值模型 (RFM)</h5>
+                        <div class="relative w-40 h-40">
+                            <svg viewBox="0 0 100 100" class="w-full h-full overflow-visible">
+                                <!-- 网格 -->
+                                <polygon points="50,0 100,38 81,100 19,100 0,38" fill="none" stroke="#E2E8F0" stroke-width="1"/>
+                                <polygon points="50,20 80,42 68,80 32,80 20,42" fill="none" stroke="#E2E8F0" stroke-width="1"/>
+                                <!-- 数据区域 1 -->
+                                <polygon points="50,10 90,40 70,90 20,80 10,40" fill="rgba(22, 119, 255, 0.1)" stroke="#1677FF" stroke-width="1.5"/>
+                                <!-- 数据区域 2 -->
+                                <polygon points="50,30 75,50 60,70 40,70 30,50" fill="rgba(16, 185, 129, 0.2)" stroke="#10B981" stroke-width="1.5"/>
+                            </svg>
+                        </div>
+                        <div class="flex space-x-4 mt-4 text-xs text-textSub">
+                            <span class="flex items-center"><span class="w-2 h-2 rounded bg-primary mr-1"></span>高价值(KA)</span>
+                            <span class="flex items-center"><span class="w-2 h-2 rounded bg-emerald-500 mr-1"></span>普通客户</span>
+                        </div>
+                    </div>
+
+                    <!-- Chart 3: 库存健康度 -->
+                    <div class="reveal delay-300 hover-card bg-white border border-borderLight rounded-2xl p-6 shadow-sm">
+                        <h5 class="text-sm font-medium text-dark mb-6">库存健康度 (滞销/正常)</h5>
+                        <div class="relative h-40 flex items-end justify-between px-4">
+                            <!-- 折线 -->
+                            <svg class="absolute inset-0 h-full w-full" preserveAspectRatio="none">
+                                <path d="M 20 20 L 80 50 L 140 80 L 200 110" fill="none" stroke="#F59E0B" stroke-width="2" />
+                            </svg>
+                            <!-- 柱子 -->
+                            <div class="w-10 bg-primary rounded-t h-[70%] z-10"></div>
+                            <div class="w-10 bg-primary rounded-t h-[90%] z-10"></div>
+                            <div class="w-10 bg-primary rounded-t h-[80%] z-10"></div>
+                            <div class="w-10 bg-primary rounded-t h-[60%] z-10"></div>
+                        </div>
+                        <div class="flex justify-between mt-3 text-xs text-textSub px-4">
+                            <span>3月</span><span>4月</span><span>5月</span><span>6月</span>
+                        </div>
+                    </div>
+
+                    <!-- Chart 4: 热销排行 -->
+                    <div class="reveal delay-300 hover-card bg-white border border-borderLight rounded-2xl p-6 shadow-sm">
+                        <h5 class="text-sm font-medium text-dark mb-4">热销商品排行 (Top 5)</h5>
+                        <div class="space-y-4">
+                            <div class="flex items-center">
+                                <span class="w-4 text-xs text-textSub font-bold mr-2">1</span>
+                                <div class="flex-1 h-2 bg-bgLight rounded-full overflow-hidden">
+                                    <div class="h-full bg-primary w-[90%] rounded-full"></div>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-4 text-xs text-textSub font-bold mr-2">2</span>
+                                <div class="flex-1 h-2 bg-bgLight rounded-full overflow-hidden">
+                                    <div class="h-full bg-blue-400 w-[75%] rounded-full"></div>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-4 text-xs text-textSub font-bold mr-2">3</span>
+                                <div class="flex-1 h-2 bg-bgLight rounded-full overflow-hidden">
+                                    <div class="h-full bg-blue-300 w-[60%] rounded-full"></div>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-4 text-xs text-textSub font-bold mr-2">4</span>
+                                <div class="flex-1 h-2 bg-bgLight rounded-full overflow-hidden">
+                                    <div class="h-full bg-slate-300 w-[45%] rounded-full"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECTION 2: 结果验证看板 ================= -->
+        <section id="section2" class="min-h-[calc(100vh-4rem)] flex flex-col justify-center py-16 scroll-mt-16">
+            <div class="reveal mb-12">
+                <h3 class="text-sm font-semibold text-primary tracking-widest uppercase mb-3">Validation & Metrics</h3>
+                <h2 class="text-3xl md:text-4xl font-bold text-dark mb-6">结果验证看板</h2>
+                
+                <!-- 项目基础信息 Bar -->
+                <div class="bg-slate-50 border border-borderLight rounded-xl p-5 md:p-6 flex flex-wrap gap-y-4 md:gap-y-0 justify-between items-center text-sm">
+                    <div><span class="text-textSub">版本号：</span><span class="font-medium text-dark">V3.0.0 全量发布</span></div>
+                    <div><span class="text-textSub">项目周期：</span><span class="font-medium text-dark">2025年</span></div>
+                    <div><span class="text-textSub">验证阶段：</span><span class="font-medium text-dark">全量上线后第一个月数据追踪</span></div>
+                    <div class="w-full mt-2 pt-2 border-t border-borderLight md:w-auto md:mt-0 md:pt-0 md:border-t-0 md:border-l md:pl-6">
+                        <span class="text-textSub">触达用户：</span><span class="font-semibold text-primary">50,000+ 企业级商家账户</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 核心指标大卡片 -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div class="reveal delay-100 hover-card bg-white border border-borderLight p-6 rounded-2xl flex flex-col justify-center">
+                    <p class="text-sm text-textSub mb-2">核心流程成功率</p>
+                    <div class="flex items-end space-x-2">
+                        <h3 class="text-4xl font-bold text-dark">98.5<span class="text-xl">%</span></h3>
+                        <span class="flex items-center text-xs text-emerald-500 font-medium mb-1"><i data-lucide="trending-up" class="w-3 h-3 mr-1"></i>达标</span>
+                    </div>
+                </div>
+                <div class="reveal delay-100 hover-card bg-white border border-borderLight p-6 rounded-2xl flex flex-col justify-center">
+                    <p class="text-sm text-textSub mb-2">新版功能渗透率</p>
+                    <div class="flex items-end space-x-2">
+                        <h3 class="text-4xl font-bold text-dark">65<span class="text-xl">%</span></h3>
+                        <span class="flex items-center text-xs text-emerald-500 font-medium mb-1"><i data-lucide="trending-up" class="w-3 h-3 mr-1"></i>持续上升</span>
+                    </div>
+                </div>
+                <div class="reveal delay-200 hover-card bg-white border border-borderLight p-6 rounded-2xl flex flex-col justify-center">
+                    <p class="text-sm text-textSub mb-2">大额采购询单转化率</p>
+                    <div class="flex items-end space-x-2">
+                        <h3 class="text-4xl font-bold text-primary">12.8<span class="text-xl">%</span></h3>
+                    </div>
+                    <p class="text-xs text-emerald-500 mt-2 bg-emerald-50 inline-block px-2 py-1 rounded w-max">提升 4.2% (绝对值)</p>
+                </div>
+                <div class="reveal delay-200 hover-card bg-white border border-borderLight p-6 rounded-2xl flex flex-col justify-center">
+                    <p class="text-sm text-textSub mb-2">商家后台满意度(CSAT)</p>
+                    <div class="flex items-end space-x-2">
+                        <h3 class="text-4xl font-bold text-primary">4.6<span class="text-2xl text-textSub font-normal">/5</span></h3>
+                    </div>
+                    <p class="text-xs text-emerald-500 mt-2 bg-emerald-50 inline-block px-2 py-1 rounded w-max">提升 0.8分</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
+                <!-- 设计交付物 -->
+                <div class="reveal delay-300 space-y-6">
+                    <h4 class="text-xl font-semibold text-dark flex items-center">
+                        <i data-lucide="folder-check" class="text-primary w-5 h-5 mr-2"></i> 设计交付物与标准化建设汇总
+                    </h4>
+                    <div class="bg-white border border-borderLight rounded-2xl p-6 shadow-sm">
+                        <ul class="space-y-5">
+                            <li class="flex items-center justify-between">
+                                <div class="flex items-center"><i data-lucide="file-text" class="text-textSub w-4 h-4 mr-3"></i><span class="text-textMain font-medium">交互详细说明文档</span></div>
+                                <span class="bg-blue-50 text-primary text-xs font-semibold px-3 py-1 rounded-full">180+ 页</span>
+                            </li>
+                            <li class="flex items-center justify-between">
+                                <div class="flex items-center"><i data-lucide="layout-template" class="text-textSub w-4 h-4 mr-3"></i><span class="text-textMain font-medium">高保真原型图 (覆盖全场景)</span></div>
+                                <span class="bg-blue-50 text-primary text-xs font-semibold px-3 py-1 rounded-full">4 份完整版</span>
+                            </li>
+                            <li class="flex items-center justify-between">
+                                <div class="flex items-center"><i data-lucide="layers-3" class="text-textSub w-4 h-4 mr-3"></i><span class="text-textMain font-medium">B端UI设计规范 (基于AntD定制)</span></div>
+                                <span class="bg-blue-50 text-primary text-xs font-semibold px-3 py-1 rounded-full">1 套体系</span>
+                            </li>
+                            <li class="pt-4 mt-2 border-t border-dashed border-borderLight">
+                                <div class="flex items-center text-sm text-emerald-600 font-medium">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4 mr-2"></i> 推动研发流程标准化，实现组件化开发已达成
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 定量指标 -->
+                <div class="reveal delay-300 space-y-6">
+                    <h4 class="text-xl font-semibold text-dark flex items-center">
+                        <i data-lucide="bar-chart-2" class="text-primary w-5 h-5 mr-2"></i> 定量指标：业务数据与产品体验
+                    </h4>
+                    <div class="bg-white border border-borderLight rounded-2xl p-8 shadow-sm flex items-center justify-between h-[216px]">
+                        <div>
+                            <p class="text-textSub font-medium mb-1">核心任务操作平均耗时</p>
+                            <div class="flex items-baseline space-x-3">
+                                <h3 class="text-5xl font-bold text-dark">4.5<span class="text-xl text-textSub font-normal ml-1">min</span></h3>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-50 text-emerald-500 mb-2">
+                                <i data-lucide="arrow-down" class="w-8 h-8"></i>
+                            </div>
+                            <p class="text-2xl font-bold text-emerald-500">-35%</p>
+                            <p class="text-xs text-textSub">(优化前 7min)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 用户与团队反馈 -->
+            <div class="reveal">
+                <h4 class="text-xl font-semibold text-dark mb-6 flex items-center">
+                    <i data-lucide="message-square-quote" class="text-primary w-5 h-5 mr-2"></i> 团队内部与用户真实反馈
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 研发反馈 -->
+                    <div class="quote-card hover-card bg-bgLight p-6 rounded-2xl border border-borderLight">
+                        <p class="text-sm text-textMain leading-relaxed mb-4 relative z-10">"这次的UI规范非常详尽，组件化程度高，前端开发效率至少提升了30%，后期维护成本也明显降低。"</p>
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-textSub mr-3">T</div>
+                            <span class="text-xs font-semibold text-dark">前端研发负责人</span>
+                        </div>
+                    </div>
+                    <!-- 运营反馈 -->
+                    <div class="quote-card hover-card bg-bgLight p-6 rounded-2xl border border-borderLight">
+                        <p class="text-sm text-textMain leading-relaxed mb-4 relative z-10">"新版后台的商品批量编辑功能上线后，运营团队配置大促活动的效率得到了质的飞跃，不再需要频繁加班配规则了。"</p>
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-primary mr-3">O</div>
+                            <span class="text-xs font-semibold text-dark">业务运营专家</span>
+                        </div>
+                    </div>
+                    <!-- 商家反馈 1 -->
+                    <div class="quote-card hover-card bg-bgLight p-6 rounded-2xl border border-borderLight">
+                        <p class="text-sm text-textMain leading-relaxed mb-4 relative z-10">"终于可以直接在后台批量导出对账单了，以前那个版本太卡了。现在的界面清爽很多，不容易点错。"</p>
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-xs font-bold text-orange-500 mr-3">M</div>
+                            <span class="text-xs font-semibold text-dark">核心商家店长</span>
+                        </div>
+                    </div>
+                    <!-- 商家反馈 2 -->
+                    <div class="quote-card hover-card bg-bgLight p-6 rounded-2xl border border-borderLight">
+                        <p class="text-sm text-textMain leading-relaxed mb-4 relative z-10">"新的采购询价流程很顺畅，能清晰看到供应商的报价对比，对我们做采购决策帮助很大，体验很好。"</p>
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-bold text-emerald-600 mr-3">E</div>
+                            <span class="text-xs font-semibold text-dark">企业采购经理</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECTION 3: 项目总结 ================= -->
+        <section id="section3" class="min-h-[calc(100vh-4rem)] flex flex-col justify-center py-16 scroll-mt-16">
+            <div class="reveal mb-10 text-center">
+                <h3 class="text-sm font-semibold text-primary tracking-widest uppercase mb-3">Project Summary</h3>
+                <h2 class="text-3xl md:text-4xl font-bold text-dark mb-4">项目总结与复盘</h2>
+            </div>
+
+            <div class="max-w-4xl mx-auto w-full">
+                <p class="reveal delay-100 text-lg text-textMain text-center leading-relaxed mb-12">
+                    项目设计完成后，我们邀请了新老用户对“工作台”及“客户模块”进行了可行性测试，并通过灰度发布及销售周报/月报持续收集反馈，验证改版成效。
+                </p>
+
+                <!-- 经验与教训卡片 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+                    <!-- 踩过的坑 -->
+                    <div class="reveal delay-200 bg-white border border-borderLight rounded-2xl p-8 shadow-sm relative overflow-hidden group">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-400 group-hover:bg-rose-500 transition-colors"></div>
+                        <div class="flex items-center mb-4">
+                            <div class="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center mr-4">
+                                <i data-lucide="alert-triangle" class="text-rose-500 w-5 h-5"></i>
+                            </div>
+                            <h4 class="text-xl font-bold text-dark">踩过的坑：操作心智的惯性</h4>
+                        </div>
+                        <p class="text-textMain leading-relaxed">
+                            反思了「简化功能」的初衷可能影响用户既有的操作心智。改版不能陷入单一的「极简」视角，需平衡老用户习惯与效率提升，从业务全局和多维度进行思考。
+                        </p>
+                    </div>
+
+                    <!-- 可复用经验 -->
+                    <div class="reveal delay-300 bg-white border border-borderLight rounded-2xl p-8 shadow-sm relative overflow-hidden group">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary group-hover:bg-blue-600 transition-colors"></div>
+                        <div class="flex items-center mb-4">
+                            <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mr-4">
+                                <i data-lucide="lightbulb" class="text-primary w-5 h-5"></i>
+                            </div>
+                            <h4 class="text-xl font-bold text-dark">可复用的经验：角色化场景拆解</h4>
+                        </div>
+                        <p class="text-textMain leading-relaxed">
+                            针对「多角色协同」的 B 端产品，应严格按用户角色（如销售、财务、运营）细分场景和目标，从而制定差异化的功能布局与信息展示策略。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 底部数据条 -->
+                <div class="reveal delay-300 bg-primary rounded-2xl p-8 text-white flex flex-col md:flex-row justify-between items-center divide-y md:divide-y-0 md:divide-x divide-blue-400/50 shadow-xl">
+                    <div class="w-full md:w-1/4 text-center py-4 md:py-0">
+                        <p class="text-blue-100 text-xs uppercase tracking-wider mb-1">工作台点击率</p>
+                        <div class="flex items-center justify-center text-white">
+                            <span class="text-2xl font-bold">32.4%</span><i data-lucide="arrow-up-right" class="text-emerald-300 w-5 h-5 ml-1"></i>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-1/4 text-center py-4 md:py-0">
+                        <p class="text-blue-100 text-xs uppercase tracking-wider mb-1">客户信息获取率</p>
+                        <div class="flex items-center justify-center text-white">
+                            <span class="text-2xl font-bold">12.7%</span><i data-lucide="arrow-up-right" class="text-emerald-300 w-5 h-5 ml-1"></i>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-1/4 text-center py-4 md:py-0">
+                        <p class="text-blue-100 text-xs uppercase tracking-wider mb-1">跟进功能满意度</p>
+                        <div class="flex items-center justify-center text-white">
+                            <span class="text-2xl font-bold">43.2%</span><i data-lucide="arrow-up-right" class="text-emerald-300 w-5 h-5 ml-1"></i>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-1/4 text-center py-4 md:py-0">
+                        <p class="text-blue-100 text-xs uppercase tracking-wider mb-1">订单表单误操率</p>
+                        <div class="flex items-center justify-center text-white">
+                            <span class="text-2xl font-bold">0.22%</span><i data-lucide="arrow-down-right" class="text-rose-200 w-5 h-5 ml-1"></i>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-bgLight border-t border-borderLight py-8 text-center text-sm text-textSub">
+        <p>B-End Product Portfolio Design. Created with attention to detail.</p>
+    </footer>
+
+    <script>
+        // 初始化图标
+        lucide.createIcons();
+
+        // 滚动视差入场动画逻辑
+        document.addEventListener("DOMContentLoaded", () => {
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.1 // 元素露出 10% 触发
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                        observer.unobserve(entry.target); // 动画只触发一次
+                    }
+                });
+            }, observerOptions);
+
+            const revealElements = document.querySelectorAll('.reveal');
+            revealElements.forEach(el => observer.observe(el));
+
+            // 回到顶部按钮逻辑
+            const backToTopBtn = document.getElementById('backToTopBtn');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 400) {
+                    backToTopBtn.classList.add('visible');
+                } else {
+                    backToTopBtn.classList.remove('visible');
+                }
+            });
+
+            backToTopBtn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
+
+        /* ================= 右侧动态细条联动进度条 ================= */
+        const progressTrack = document.getElementById('progressTrack');
+        const progressIndicator = document.getElementById('progressIndicator');
+        const trackLine = document.querySelector('.progress-track-line');
+
+        let isDragging = false;
+
+        // 平滑更新滑块位置 (无级联动)
+        function updateThumbFromScroll() {
+            if (isDragging) return;
+            
+            // 获取文档真实可滚动的最大高度
+            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+            const scrollPercent = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+            
+            // 计算滑块在轨道内可移动的最大Top值
+            const maxTop = trackLine.offsetHeight - progressIndicator.offsetHeight;
+            
+            // 将滚动百分比映射到轨道上的Top值
+            progressIndicator.style.top = `${scrollPercent * maxTop}px`;
+        }
+
+        // 监听系统滚动与窗口变化
+        window.addEventListener('scroll', updateThumbFromScroll);
+        window.addEventListener('resize', updateThumbFromScroll);
+
+        /* ================= 进度条拖拽控制 (自由定位) ================= */
+        function updateScrollFromDrag(e) {
+            const trackRect = trackLine.getBoundingClientRect();
+            let y = e.clientY - trackRect.top; // 鼠标相对轨道的Y坐标
+            
+            // 计算滑块自身的偏移量，使鼠标点在滑块中心
+            const indicatorHeight = progressIndicator.offsetHeight;
+            const maxTopPx = trackRect.height - indicatorHeight;
+            
+            let indicatorY = y - (indicatorHeight / 2);
+            indicatorY = Math.max(0, Math.min(indicatorY, maxTopPx)); // 限制在轨道内
+            
+            // 更新滑块UI位置 (瞬间更新，无过渡)
+            progressIndicator.style.top = `${indicatorY}px`;
+            
+            // 根据拖动位置同步滚动页面
+            const percent = maxTopPx > 0 ? indicatorY / maxTopPx : 0;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            window.scrollTo({ top: percent * docHeight, behavior: 'auto' }); // behavior auto 保证拖动跟手零延迟
+        }
+
+        progressTrack.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            // 临时取消根元素的平滑滚动属性，防止拖拽产生迟滞感
+            document.documentElement.classList.remove('scroll-smooth');
+            document.body.style.userSelect = 'none'; // 拖动时禁止选中文字
+            updateScrollFromDrag(e);
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isDragging) updateScrollFromDrag(e);
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                document.body.style.userSelect = '';
+                // 恢复原生平滑滚动
+                document.documentElement.classList.add('scroll-smooth');
+            }
+        });
+
+        // 初始校准
+        setTimeout(updateThumbFromScroll, 100);
+    </script>
+</body>
+<!-- ... existing code ... -->
+</style>
+</head>
+<body>
+
+<!-- 全局返回键 (修改后：带锚点跳转，且使用原生SVG图标防止丢失) -->
+    <a href="index.html#page-5-expanded" class="back-btn" title="返回首页交互大屏">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6"/>
+        </svg>
+    </a>
+    <!-- 右侧点状滚动进度条 -->
+    <div id="progress-nav" title="拖动或点击切换页面"></div>
+<!-- ... existing code ... -->
+</html>

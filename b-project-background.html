@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B端全链路重构 - 作品集展示 (全屏滚动版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* ---------------- 全局与基础样式 ---------------- */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden; /* 强制隐藏原生滚动条 */
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #ffffff;
+            color: #334155;
+            overscroll-behavior: none;
+        }
+
+        /* 自定义隐形滚动条，防止极端小屏下吞字 */
+        .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #E2E8F0 transparent; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #E2E8F0; border-radius: 4px; }
+
+        /* 统一品牌色 */
+        .text-brand { color: #1677FF; }
+        .bg-brand { background-color: #1677FF; }
+        .border-brand { border-color: #1677FF; }
+        
+        /* 增强型渐变色 (加入微紫过渡，使流动动画更明显) */
+        .bg-brand-gradient { 
+            background: linear-gradient(135deg, #1677FF 0%, #818CF8 50%, #3B82F6 100%); 
+            background-size: 200% 200%;
+        }
+
+        /* 渐变流动机理 */
+        @keyframes gradient-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .animate-gradient-flow { animation: gradient-flow 5s ease infinite; }
+
+        /* 返回上一级按钮 (毛玻璃样式，与总结与复盘一致) */
+        .back-btn {
+            position: fixed; top: 40px; left: 40px; z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            width: 44px; height: 44px;
+            color: #64748B; text-decoration: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px);
+            border: 1px solid #E2E8F0; box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            transition: all 0.3s ease;
+        }
+        .back-btn svg { width: 22px; height: 22px; transition: transform 0.3s ease; }
+        .back-btn:hover { color: #1677FF; border-color: #1677FF; background: #E6F4FF; }
+        .back-btn:hover svg { transform: translateX(-3px); }
+
+        @media (max-width: 1200px) {
+            .back-btn { top: 24px; left: 24px; width: 40px; height: 40px; }
+        }
+        @media (max-width: 768px) {
+            .back-btn { top: 20px; left: 16px; width: 36px; height: 36px; }
+            .back-btn svg { width: 18px; height: 18px; }
+        }
+
+        /* ---------------- 全屏滚动容器 ---------------- */
+        #fullpage-wrapper {
+            width: 100vw;
+            height: 100vh;
+            transition: transform 0.8s cubic-bezier(0.64, 0.04, 0.35, 1);
+            will-change: transform;
+        }
+
+        .portfolio-section {
+            width: 100vw;
+            height: 100vh; /* 每页严格占据一屏 */
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* 防止内部溢出 */
+            padding-right: 60px; /* 避开进度条 */
+        }
+
+        /* ---------------- 右侧点状可拖拽进度条 ---------------- */
+        #progress-nav {
+            position: fixed; right: 28px; top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 20px; align-items: center;
+            z-index: 9999; cursor: pointer; padding: 10px 0;
+        }
+        #progress-nav::before {
+            content: ''; position: absolute; inset: -20px -30px;
+        }
+        .nav-dot {
+            width: 6px; height: 6px; border-radius: 50%; background: #E2E8F0;
+            transition: background 0.3s; pointer-events: none;
+        }
+        #progress-thumb {
+            position: absolute; left: 50%; top: 0; 
+            transform: translate(-50%, -50%); 
+            width: 12px; height: 12px;
+            background: #1677FF; border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(22, 119, 255, 0.5);
+            transition: top 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            cursor: grab; pointer-events: none; 
+        }
+        #progress-nav:active #progress-thumb { cursor: grabbing; }
+
+        /* ---------------- 统一淡入出现动画 ---------------- */
+        .reveal {
+            opacity: 0; transform: translateY(50px);
+            transition: opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+            will-change: opacity, transform;
+        }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+        .delay-100 { transition-delay: 100ms; }
+        .delay-200 { transition-delay: 200ms; }
+        .delay-300 { transition-delay: 300ms; }
+        .delay-400 { transition-delay: 400ms; }
+
+        /* 背景装饰弱化飘动 */
+        @keyframes blob-drift {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.05); }
+            66% { transform: translate(-20px, 20px) scale(0.95); }
+        }
+        .bg-blob {
+            position: absolute; border-radius: 50%; filter: blur(120px); z-index: 0; opacity: 0.03;
+            background-color: #1677FF; pointer-events: none;
+            animation: blob-drift 15s ease-in-out infinite;
+        }
+
+        /* ================== 各页面专属样式 ================== */
+
+        /* 1. 项目背景 */
+        .mockup-wrapper { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        .mockup-backdrop { position: absolute; inset: -10px; background: linear-gradient(135deg, #F0F5FF 0%, #E0E7FF 100%); border-radius: 24px; transform: rotate(2deg) scale(0.98); z-index: 0; opacity: 0.8; transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .mockup-wrapper:hover .mockup-backdrop { transform: rotate(3deg) scale(1); }
+        .browser-mockup { background: #FFFFFF; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1), 0 0 0 1px rgba(226, 232, 240, 1); overflow: hidden; position: relative; z-index: 1; width: 100%; height: 100%; display: flex; flex-direction: column; transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.5s ease; }
+        .mockup-wrapper:hover .browser-mockup { transform: translateY(-4px); box-shadow: 0 30px 60px -15px rgba(22, 119, 255, 0.15), 0 0 0 1px rgba(226, 232, 240, 1); }
+        .dash-sidebar { background: #FFFFFF; border-right: 1px solid #E2E8F0; z-index: 10; }
+        .dash-header { background: #FFFFFF; border-bottom: 1px solid #E2E8F0; }
+        .dash-card { background: #FFFFFF; border-radius: 12px; border: 1px solid #F1F5F9; box-shadow: 0 2px 8px rgba(0,0,0,0.02); transition: all 0.3s ease; }
+        .dash-card:hover { box-shadow: 0 10px 25px -5px rgba(22,119,255,0.08); transform: translateY(-2px); border-color: #DBEAFE; }
+        .chart-line { fill: none; stroke: #1677FF; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+        .chart-area { fill: url(#gradient); opacity: 0.15; }
+        .chart-point { fill: white; stroke: #1677FF; stroke-width: 2.5; transition: all 0.3s; cursor: pointer; }
+        .chart-point:hover { stroke-width: 4; r: 6; }
+
+        /* 2. 项目目标 (已修复动画选择器) */
+        .line-reveal {
+            transform: translateY(-50%) scaleX(0) !important;
+            transform-origin: left;
+            transition: transform 1.2s cubic-bezier(0.64, 0.04, 0.35, 1) 200ms, opacity 0.8s ease 200ms !important;
+        }
+        .reveal.active.line-reveal { 
+            transform: translateY(-50%) scaleX(1) !important; 
+        }
+        .step-icon-box {
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.6s ease, box-shadow 0.3s ease;
+            transform: scale(0.6); opacity: 0;
+        }
+        .reveal.active .step-icon-box { transform: scale(1); opacity: 1; }
+        .delay-100 .step-icon-box { transition-delay: 100ms, 100ms, 0s; }
+        .delay-200 .step-icon-box { transition-delay: 200ms, 200ms, 0s; }
+        .delay-300 .step-icon-box { transition-delay: 300ms, 300ms, 0s; }
+        .delay-400 .step-icon-box { transition-delay: 400ms, 400ms, 0s; }
+        
+        .step-card { transition: transform 0.3s ease; }
+        .step-card:hover .step-icon-box { transform: translateY(-8px) scale(1.05) !important; box-shadow: 0 15px 30px rgba(22, 119, 255, 0.15); }
+        .content-card { background: #FFFFFF; border: 1px solid #F1F5F9; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02); border-radius: 16px; }
+
+        /* 3. 优化流程 */
+        .process-track { position: relative; width: 100%; display: flex; justify-content: space-between; align-items: stretch; gap: 20px; }
+        .process-card-flow { background: #FFFFFF; border-radius: 20px; box-shadow: 0 10px 40px -10px rgba(0,0,0,0.06); border: 1px solid #F8FAFC; position: relative; z-index: 10; flex: 1; min-width: 180px; max-width: 280px; padding: 32px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-color 0.4s ease; }
+        .process-card-flow:hover { transform: translateY(-12px); box-shadow: 0 20px 50px -10px rgba(22, 119, 255, 0.15); border-color: #E0E7FF; }
+        .phase-tag { color: white; padding: 4px 14px; border-radius: 100px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .card-divider { width: 30px; height: 2px; background: #E2E8F0; margin: 16px 0; transition: width 0.3s ease; }
+        .process-card-flow:hover .card-divider { width: 60px; background: #1677FF; }
+        .sub-step-container { margin-top: auto; width: 100%; background: #F8FAFC; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; border: 1px solid #F1F5F9; }
+        .sub-step { color: #475569; font-size: 13px; font-weight: 500; }
+        .connector-svg { position: absolute; top: 105px; left: 5%; width: 90%; height: 10px; transform: translateY(-50%); z-index: 0; pointer-events: none; overflow: hidden; }
+        .connector-path-bg { fill: none; stroke: #F1F5F9; stroke-width: 3; stroke-linecap: round; }
+        .connector-path-active { fill: none; stroke: #1677FF; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 12 12; animation: flow 30s linear infinite; opacity: 0.5; }
+        @keyframes flow { to { stroke-dashoffset: -1000; } }
+
+        /* 4. 角色职责 */
+        .responsibility-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; display: flex; flex-direction: column; height: 100%; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+        .responsibility-card:hover { transform: translateY(-6px); box-shadow: 0 16px 30px rgba(22, 119, 255, 0.08); border-color: #BAE0FF; }
+        .responsibility-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #F8FAFC; transition: background 0.3s; border-radius: 16px 16px 0 0; z-index: 5;}
+        .responsibility-card:hover::before { background: #1677FF; }
+        .workflow-track-container { background: #F8FAFC; border-radius: 20px; border: 1px solid #F1F5F9; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .process-node { position: relative; z-index: 10; background: white; border: 1px solid #E2E8F0; border-radius: 14px; padding: 12px 10px; width: 180px; flex-shrink: 0; text-align: center; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.02); cursor: pointer; }
+        .process-node:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.04); }
+        .process-node.active { border-color: #1677FF; box-shadow: 0 8px 24px rgba(22, 119, 255, 0.12); transform: scale(1.03); }
+        .process-node.active:hover { transform: scale(1.03) translateY(-2px); }
+        .node-icon { width: 38px; height: 38px; border-radius: 12px; background: #F1F5F9; color: #64748B; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; transition: all 0.3s; }
+        .process-node.active .node-icon { background: #1677FF; color: white; box-shadow: 0 6px 12px rgba(22, 119, 255, 0.25); }
+        .node-title { color: #334155; transition: color 0.3s ease; }
+        .process-node.active .node-title { color: #1E293B; }
+        .node-desc { font-size: 11px; color: #94A3B8; padding: 3px 8px; border-radius: 6px; transition: all 0.3s ease; background: transparent; margin: 0; font-weight: 400; }
+        .process-node.active .node-desc { background: #1677FF; color: #FFFFFF; font-weight: 500; }
+        .node-index { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #F1F5F9; color: #94A3B8; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 8px; border: 2px solid white; transition: all 0.3s ease; }
+        .process-node.active .node-index { background: #1677FF; color: white; }
+        .connector-box { flex: 1; min-width: 60px; position: relative; height: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; }
+        .action-label { background: white; padding: 2px 10px; border-radius: 100px; font-size: 11px; color: #1677FF; font-weight: 600; border: 1px solid #E0F2FE; margin-bottom: 2px; box-shadow: 0 2px 6px rgba(22, 119, 255, 0.05); white-space: nowrap; }
+        .arrow-segment-role { width: 100%; height: 2px; background: linear-gradient(90deg, #CBD5E1 0%, #1677FF 100%); position: relative; }
+        .arrow-segment-role::after { content: ''; position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 5px solid #1677FF; }
+        .tag-pill { padding: 2px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+        .tag-problem { background: #FFF1F0; color: #FF4D4F; }
+        .tag-solution { background: #F6FFED; color: #52C41A; }
+
+        /* 5. 需求整理 */
+        .list-header { display: none; }
+        @media (min-width: 1024px) {
+            .list-header { display: grid; grid-template-columns: 1.5fr 1fr 4fr 4fr; gap: 20px; padding: 0 28px; margin-bottom: 12px; font-size: 13px; color: #94A3B8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        }
+        .req-row { background: white; border: 1px solid #E2E8F0; border-radius: 12px; display: flex; flex-direction: column; gap: 10px; padding: 14px 20px; transition: all 0.3s ease; position: relative; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        @media (min-width: 1024px) {
+            .req-row { display: grid; grid-template-columns: 1.5fr 1fr 4fr 4fr; align-items: center; padding: 16px 28px; }
+        }
+        .req-row:hover { box-shadow: 0 8px 24px rgba(22, 119, 255, 0.08); border-color: #BAE0FF; transform: translateY(-2px); }
+        .req-row::before { content: ''; position: absolute; left: 0; top: 16px; bottom: 16px; width: 4px; background: #E2E8F0; border-radius: 0 4px 4px 0; transition: background 0.3s; }
+        .req-row:hover::before { background: #1677FF; }
+        .req-name { font-size: 15px; font-weight: 700; color: #1E293B; display: flex; align-items: center; gap: 8px; }
+        .priority-badge { display: inline-flex; align-items: center; justify-content: center; height: 24px; padding: 0 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+        .p0-badge { background: #FFF1F0; color: #FF4D4F; border: 1px solid #FFA39E; }
+        .p1-badge { background: #FFF7E6; color: #FA8C16; border: 1px solid #FFD591; }
+        .content-text { font-size: 13px; color: #64748B; line-height: 1.5; }
+        .design-solution { background: #F8FAFC; padding: 12px 16px; border-radius: 8px; border-left: 2px solid #1677FF; }
+        .design-title { color: #1677FF; font-weight: 600; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+
+        /* 6. 用户声浪 */
+        .voice-container { flex: 1; display: flex; flex-direction: column; position: relative; z-index: 10; min-h-0; }
+        .scrollable-track { width: 100%; overflow-x: auto; flex: 1; display: flex; flex-direction: column; min-h-0; -ms-overflow-style: none; scrollbar-width: none; }
+        .scrollable-track::-webkit-scrollbar { display: none; }
+        .track-inner { min-width: 1000px; display: flex; flex-direction: column; flex: 1; min-h-0; }
+        .phase-header-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 12px; position: relative; shrink-0; }
+        @media (min-width: 1280px) { .phase-header-row { gap: 24px; } }
+        .phase-title-card { background: #F0F5FF; border-radius: 100px; padding: 8px 12px; text-align: center; color: #1E3A8A; font-weight: 700; font-size: 13px; border: 1px solid #DBEAFE; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        @media (min-width: 1024px) { .phase-title-card { font-size: 14px; } }
+        .danmaku-track-area { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; position: relative; margin-bottom: 12px; overflow: hidden; min-h-0; mask-image: linear-gradient(to bottom, transparent, black 5%, black 95%, transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 5%, black 95%, transparent); }
+        @media (min-width: 1280px) { .danmaku-track-area { gap: 24px; } }
+        .swim-lane-bg { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; pointer-events: none; z-index: 0; }
+        @media (min-width: 1280px) { .swim-lane-bg { gap: 24px; } }
+        .lane-divider { border-right: 1px dashed #E2E8F0; height: 100%; }
+        .lane-divider:last-child { border-right: none; }
+        @keyframes danmaku-slide { 0% { transform: translateX(100cqi); } 100% { transform: translateX(-100%); } }
+        .lane-col { overflow: hidden; position: relative; container-type: inline-size; mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent); }
+        .danmaku-pill { background: white; border: 1px solid #E2E8F0; border-radius: 50px; padding: 4px 10px 4px 4px; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); width: max-content; transition: box-shadow 0.3s, border-color 0.3s; position: relative; margin-bottom: 10px; cursor: pointer; align-self: flex-start; will-change: transform; }
+        @media (min-width: 1024px) { .danmaku-pill { padding: 6px 12px 6px 6px; gap: 8px; margin-bottom: 12px; } }
+        .danmaku-pill:hover { animation-play-state: paused !important; box-shadow: 0 8px 20px rgba(22, 119, 255, 0.12); border-color: #BAE0FF; z-index: 20; }
+        .lane-col .danmaku-pill:nth-child(1) { animation: danmaku-slide 9s linear infinite; animation-delay: -2s; }
+        .lane-col .danmaku-pill:nth-child(2) { animation: danmaku-slide 11s linear infinite; animation-delay: -7s; }
+        .lane-col .danmaku-pill:nth-child(3) { animation: danmaku-slide 8.5s linear infinite; animation-delay: -1s; }
+        .lane-col .danmaku-pill:nth-child(4) { animation: danmaku-slide 10s linear infinite; animation-delay: -5s; }
+        .lane-col .danmaku-pill:nth-child(5) { animation: danmaku-slide 12s linear infinite; animation-delay: -8s; }
+        .lane-col .danmaku-pill:nth-child(6) { animation: danmaku-slide 9.5s linear infinite; animation-delay: -3s; }
+        .role-circle { width: 24px; height: 24px; border-radius: 50%; background: #F1F5F9; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 2px solid white; }
+        @media (min-width: 1024px) { .role-circle { width: 28px; height: 28px; } }
+        .danmaku-text { color: #334155; font-size: 11px; font-weight: 500; white-space: nowrap; }
+        @media (min-width: 1024px) { .danmaku-text { font-size: 12px; } }
+        .tag-pain { font-size: 9px; padding: 1px 4px; border-radius: 3px; font-weight: 700; margin-left: 4px; }
+        .tag-high { background: #FFF1F2; color: #E11D48; border: 1px solid #FECDD3; } 
+        .tag-mid { background: #FFF7ED; color: #EA580C; border: 1px solid #FED7AA; }
+        
+        .analysis-section { shrink-0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: start; }
+        @media (min-width: 1280px) { .analysis-section { gap: 24px; } }
+        .insight-pill { background: #FFF7ED; border: 1px solid #FFEDD5; border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: row; align-items: center; gap: 10px; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.05); width: 100%; transition: all 0.3s; position: relative; }
+        .insight-pill:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(249, 115, 22, 0.1); border-color: #F97316; }
+        .insight-icon-box { width: 32px; height: 32px; background: #F97316; color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 6px rgba(249, 115, 22, 0.2); }
+        .insight-content { flex: 1; }
+        .insight-title { font-weight: 800; color: #9A3412; font-size: 13px; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between; }
+        .insight-desc { font-size: 11px; color: #7C2D12; line-height: 1.3; opacity: 0.8; }
+        .connector-arrow { display: flex; justify-content: center; color: #CBD5E1; margin-bottom: 8px; }
+
+    </style>
+</head>
+<body>
+
+    <!-- 全局返回键 (修改后：返回 index.html 并带上 #page-5-expanded 锚点) -->
+    <a href="index.html#page-5-expanded" class="back-btn" title="返回首页交互大屏">
+        <i data-lucide="chevron-left"></i>
+    </a>
+
+    <!-- 右侧点状滚动进度条 -->
+    <div id="progress-nav" title="拖动或点击切换页面">
+        <!-- 蓝色的滑动指示点 (用 JS 追加) -->
+    </div>
+
+    <!-- 全屏页面包裹容器 -->
+    <div id="fullpage-wrapper">
+
+        <!-- ==================== Page 1: 项目背景 ==================== -->
+        <section class="portfolio-section pt-24 pb-8 px-8 lg:px-16" data-index="0">
+            <div class="bg-blob w-[800px] h-[800px] top-[-10%] right-[-10%]" style="animation-delay: -2s;"></div>
+            <div class="flex-1 flex flex-col lg:flex-row items-center justify-between w-full max-w-[1700px] mx-auto gap-12 lg:gap-20 z-10 min-h-0">
+                
+                <!-- 左侧文字区 -->
+                <div class="w-full lg:w-[30%] flex flex-col justify-center space-y-8 lg:space-y-12 shrink-0 reveal">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-1.5 h-10 bg-brand rounded-sm shadow-md shadow-blue-500/30"></div>
+                            <h1 class="text-4xl lg:text-5xl xl:text-6xl font-bold text-slate-900 tracking-tight">项目背景</h1>
+                        </div>
+                        <p class="text-base lg:text-xl text-slate-400 font-light ml-5 mt-1">Project Context & Overview</p>
+                    </div>
+                    <div class="space-y-4">
+                        <h2 class="text-xl lg:text-2xl font-bold text-slate-800">全渠道业务中台重构</h2>
+                        <p class="text-slate-500 text-sm lg:text-base leading-relaxed">
+                            随着集团多品牌战略的推进，旧版 ERP 已无法支撑 Web、App 及小程序三端数据的实时互通。<br><br>
+                            本次改版旨在打造一个<strong>一体化、智能化</strong>的运营中台，解决数据割裂与操作冗余问题。
+                        </p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-6 pt-6 border-t border-slate-100 reveal delay-100">
+                        <div>
+                            <div class="text-4xl lg:text-5xl font-bold text-brand mb-1">-45%</div>
+                            <div class="text-slate-700 font-bold text-sm lg:text-base">任务流转耗时</div>
+                            <div class="text-slate-400 text-xs mt-1">操作路径深度优化</div>
+                        </div>
+                        <div>
+                            <div class="text-4xl lg:text-5xl font-bold text-brand mb-1">+99%</div>
+                            <div class="text-slate-700 font-bold text-sm lg:text-base">数据实时同步</div>
+                            <div class="text-slate-400 text-xs mt-1">告别 T+1 数据延迟</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧 UI 大屏演示区 -->
+                <div class="w-full lg:w-[70%] h-full max-h-[750px] min-h-[450px] relative py-4 reveal delay-200">
+                    <div class="mockup-wrapper">
+                        <div class="mockup-backdrop"></div>
+                        <div class="browser-mockup">
+                            <!-- 浏览器栏 -->
+                            <div class="h-10 bg-[#F8FAFC] flex items-center px-4 space-x-2 border-b border-slate-200 shrink-0">
+                                <div class="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]"></div>
+                                <div class="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]"></div>
+                                <div class="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]"></div>
+                                <div class="ml-4 flex-1 max-w-sm h-6 bg-white border border-slate-200 rounded-md flex items-center px-3 mx-auto text-xs text-slate-400">
+                                    <i data-lucide="lock" class="w-3 h-3 mr-2 opacity-50"></i> admin.dashboard.com
+                                </div>
+                            </div>
+                            <!-- 界面内部概览 -->
+                            <div class="flex flex-1 overflow-hidden">
+                                <!-- Sidebar -->
+                                <div class="dash-sidebar w-48 lg:w-56 flex flex-col p-4 lg:p-5 space-y-6 shrink-0">
+                                    <div class="flex items-center gap-3 text-slate-800 px-2">
+                                        <div class="w-8 h-8 bg-brand rounded-lg shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-md">A</div>
+                                        <span class="font-bold text-base lg:text-lg truncate tracking-tight">Admin Pro</span>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <div class="flex items-center gap-3 text-white bg-[#1677FF] p-2.5 lg:p-3 rounded-xl shadow-md shadow-blue-500/20 cursor-pointer">
+                                            <i data-lucide="layout-dashboard" class="w-4 h-4 lg:w-5 lg:h-5 shrink-0"></i>
+                                            <span class="text-xs lg:text-sm font-medium truncate">实时概览</span>
+                                        </div>
+                                        <div class="flex items-center gap-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 p-2.5 lg:p-3 rounded-xl transition-colors cursor-pointer">
+                                            <i data-lucide="package" class="w-4 h-4 lg:w-5 lg:h-5 shrink-0"></i>
+                                            <span class="text-xs lg:text-sm font-medium truncate">商品管理</span>
+                                        </div>
+                                        <div class="flex items-center gap-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 p-2.5 lg:p-3 rounded-xl transition-colors cursor-pointer">
+                                            <i data-lucide="shopping-bag" class="w-4 h-4 lg:w-5 lg:h-5 shrink-0"></i>
+                                            <span class="text-xs lg:text-sm font-medium truncate">订单中心</span>
+                                        </div>
+                                        <div class="flex items-center gap-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 p-2.5 lg:p-3 rounded-xl transition-colors cursor-pointer">
+                                            <i data-lucide="pie-chart" class="w-4 h-4 lg:w-5 lg:h-5 shrink-0"></i>
+                                            <span class="text-xs lg:text-sm font-medium truncate">数据报表</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Main Content -->
+                                <div class="flex-1 flex flex-col bg-[#F8FAFC] overflow-y-auto overflow-x-hidden">
+                                    <div class="dash-header h-16 flex items-center justify-between px-6 lg:px-8 shrink-0">
+                                        <h2 class="text-base lg:text-lg font-bold text-slate-800">全渠道业务中台</h2>
+                                        <div class="flex items-center gap-4">
+                                            <div class="relative cursor-pointer hover:opacity-80">
+                                                <i data-lucide="bell" class="w-5 h-5 text-slate-400"></i>
+                                                <span class="absolute 0 right-0 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                                            </div>
+                                            <div class="flex items-center gap-2 pl-4 border-l border-slate-200 cursor-pointer group">
+                                                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-brand font-bold text-xs group-hover:bg-blue-200 transition-colors">AD</div>
+                                                <span class="text-sm text-slate-600 font-medium group-hover:text-brand transition-colors">Admin</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="p-6 lg:p-8 space-y-6">
+                                        <div class="grid grid-cols-4 gap-4 lg:gap-6">
+                                            <div class="dash-card p-4 lg:p-5 group">
+                                                <div class="flex justify-between items-start mb-2"><div class="text-xs lg:text-sm text-slate-500 font-medium">今日 GMV</div><i data-lucide="trending-up" class="w-4 h-4 text-green-500 opacity-50 group-hover:opacity-100 transition-opacity"></i></div>
+                                                <div class="text-xl lg:text-2xl font-extrabold text-slate-800 tracking-tight">¥ 128,450</div>
+                                                <div class="text-xs text-green-600 mt-2 flex items-center bg-green-50 w-fit px-1.5 py-0.5 rounded font-medium">+12.5%</div>
+                                            </div>
+                                            <div class="dash-card p-4 lg:p-5 group">
+                                                <div class="flex justify-between items-start mb-2"><div class="text-xs lg:text-sm text-slate-500 font-medium">新增订单</div><i data-lucide="shopping-cart" class="w-4 h-4 text-brand opacity-50 group-hover:opacity-100 transition-opacity"></i></div>
+                                                <div class="text-xl lg:text-2xl font-extrabold text-slate-800 tracking-tight">3,842</div>
+                                                <div class="text-xs text-blue-600 mt-2 flex items-center bg-blue-50 w-fit px-1.5 py-0.5 rounded font-medium">+8.2%</div>
+                                            </div>
+                                            <div class="dash-card p-4 lg:p-5 group">
+                                                <div class="flex justify-between items-start mb-2"><div class="text-xs lg:text-sm text-slate-500 font-medium">异常预警</div><i data-lucide="alert-circle" class="w-4 h-4 text-orange-500 opacity-50 group-hover:opacity-100 transition-opacity"></i></div>
+                                                <div class="text-xl lg:text-2xl font-extrabold text-slate-800 tracking-tight">15</div>
+                                                <div class="text-xs text-orange-600 mt-2 flex items-center bg-orange-50 w-fit px-1.5 py-0.5 rounded font-medium">需立即处理</div>
+                                            </div>
+                                            <div class="dash-card p-4 lg:p-5 group">
+                                                <div class="flex justify-between items-start mb-2"><div class="text-xs lg:text-sm text-slate-500 font-medium">整体转化率</div><i data-lucide="percent" class="w-4 h-4 text-purple-500 opacity-50 group-hover:opacity-100 transition-opacity"></i></div>
+                                                <div class="text-xl lg:text-2xl font-extrabold text-slate-800 tracking-tight">4.8%</div>
+                                                <div class="text-xs text-slate-500 mt-2 flex items-center bg-slate-100 w-fit px-1.5 py-0.5 rounded font-medium">持平</div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-3 gap-4 lg:gap-6">
+                                            <div class="dash-card col-span-2 p-5 lg:p-6 h-64 lg:h-[340px] flex flex-col relative group">
+                                                <div class="flex justify-between items-center mb-6">
+                                                    <h3 class="font-bold text-slate-800 text-base">流量与转化趋势</h3>
+                                                    <div class="flex bg-slate-100 p-1 rounded-md"><span class="px-3 py-1 bg-white text-slate-800 text-xs font-medium rounded shadow-sm cursor-pointer">本周</span><span class="px-3 py-1 text-slate-500 text-xs font-medium cursor-pointer hover:text-slate-700">本月</span></div>
+                                                </div>
+                                                <div class="flex-1 w-full relative mt-2">
+                                                    <svg viewBox="0 0 600 200" class="w-full h-full overflow-visible" preserveAspectRatio="none">
+                                                        <defs><linearGradient id="gradient" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#1677FF" stop-opacity="0.3"/><stop offset="100%" stop-color="#1677FF" stop-opacity="0"/></linearGradient></defs>
+                                                        <path class="chart-area" d="M0,160 C50,140 100,180 150,110 C200,40 250,90 300,70 C350,50 400,100 450,60 C500,20 550,130 600,90 L600,200 L0,200 Z" />
+                                                        <path class="chart-line" d="M0,160 C50,140 100,180 150,110 C200,40 250,90 300,70 C350,50 400,100 450,60 C500,20 550,130 600,90" />
+                                                        <circle class="chart-point" cx="150" cy="110" r="4"/><circle class="chart-point" cx="300" cy="70" r="4"/><circle class="chart-point" cx="450" cy="60" r="4"/><circle class="chart-point" cx="600" cy="90" r="4"/>
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                            <div class="dash-card col-span-1 p-5 lg:p-6 h-64 lg:h-[340px] flex flex-col">
+                                                <div class="flex justify-between items-center mb-6"><h3 class="font-bold text-slate-800 text-base">品类销量 Top 4</h3><i data-lucide="more-horizontal" class="w-4 h-4 text-slate-400 cursor-pointer hover:text-slate-700"></i></div>
+                                                <div class="flex-1 space-y-4 lg:space-y-6">
+                                                    <div class="flex items-center gap-3 group cursor-pointer"><div class="w-8 h-8 bg-blue-50 text-brand font-bold text-sm flex items-center justify-center rounded-md">1</div><div class="flex-1"><div class="h-2.5 bg-slate-200 rounded-full w-4/5 mb-2 group-hover:bg-brand transition-colors"></div><div class="h-2 bg-slate-100 rounded-full w-1/2"></div></div></div>
+                                                    <div class="flex items-center gap-3 group cursor-pointer"><div class="w-8 h-8 bg-slate-100 text-slate-500 font-bold text-sm flex items-center justify-center rounded-md">2</div><div class="flex-1"><div class="h-2.5 bg-slate-200 rounded-full w-3/4 mb-2 group-hover:bg-slate-300 transition-colors"></div><div class="h-2 bg-slate-100 rounded-full w-2/5"></div></div></div>
+                                                    <div class="flex items-center gap-3 group cursor-pointer"><div class="w-8 h-8 bg-slate-100 text-slate-500 font-bold text-sm flex items-center justify-center rounded-md">3</div><div class="flex-1"><div class="h-2.5 bg-slate-200 rounded-full w-2/3 mb-2 group-hover:bg-slate-300 transition-colors"></div><div class="h-2 bg-slate-100 rounded-full w-1/3"></div></div></div>
+                                                    <div class="flex items-center gap-3 opacity-50"><div class="w-8 h-8 bg-slate-50 text-slate-400 font-bold text-sm flex items-center justify-center rounded-md">4</div><div class="flex-1"><div class="h-2.5 bg-slate-200 rounded-full w-1/2 mb-2"></div><div class="h-2 bg-slate-100 rounded-full w-1/4"></div></div></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <footer class="w-full flex justify-between text-slate-400 mt-auto pt-6 border-t border-slate-50 z-20 text-xs max-w-[1700px] mx-auto">
+                <span>01 / 06 - 项目背景</span>
+            </footer>
+        </section>
+
+        <!-- ==================== Page 2: 项目目标 ==================== -->
+        <section class="portfolio-section pt-24 pb-8 px-8 lg:px-16" data-index="1">
+            <div class="bg-blob w-[600px] h-[600px] top-0 left-1/2 -translate-x-1/2" style="animation-delay: -5s;"></div>
+            <div class="flex-1 flex flex-col justify-center max-w-[1800px] mx-auto w-full z-10">
+                <header class="flex justify-between items-end border-b border-slate-100 pb-8 mb-12 lg:mb-16 reveal shrink-0 max-w-[1400px] mx-auto w-full">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-1.5 h-10 bg-brand rounded-sm shadow-md"></div>
+                            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 tracking-tight">项目目标</h1>
+                        </div>
+                        <p class="text-lg sm:text-xl text-slate-500 font-light ml-4 sm:ml-6 mt-2">Project Objectives & Roadmap</p>
+                    </div>
+                    <div><span class="px-4 py-2 bg-blue-50 text-brand rounded-full text-sm font-medium border border-blue-100">核心规划里程碑</span></div>
+                </header>
+
+                <div class="relative w-full max-w-[1400px] mx-auto">
+                    <!-- 线条渐变生长动画 -->
+                    <div class="hidden xl:block absolute top-[72px] left-[12.5%] right-[12.5%] h-[3px] bg-brand-gradient -translate-y-1/2 rounded-full z-0 reveal line-reveal animate-gradient-flow"></div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 lg:gap-12 relative z-10">
+                        <!-- Step 1 -->
+                        <div class="step-card group relative flex flex-col items-center text-center reveal delay-100">
+                            <div class="hidden xl:block absolute top-[72px] left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-white border-[3px] border-brand rounded-full z-20 shadow-sm"></div>
+                            <div class="mb-8 lg:mb-12 step-icon-box w-36 h-36 lg:w-40 lg:h-40 rounded-2xl bg-brand-gradient shadow-lg flex items-center justify-center text-white relative z-30 animate-gradient-flow">
+                                <i data-lucide="target" class="w-16 h-16 opacity-90"></i>
+                                <div class="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center text-brand font-bold text-sm shadow-md border border-blue-50">01</div>
+                            </div>
+                            <div class="content-card p-6 lg:p-8 w-full hover:border-blue-200 transition-colors flex-1">
+                                <h3 class="text-xl lg:text-2xl font-bold text-slate-800 mb-2">项目立项</h3>
+                                <p class="text-slate-400 text-xs lg:text-sm mb-6 uppercase tracking-wider">Project Initiation</p>
+                                <ul class="text-left space-y-3 text-slate-600 text-sm">
+                                    <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-brand shrink-0 mt-0.5"></i><span>明确业务痛点与机会点</span></li>
+                                    <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-brand shrink-0 mt-0.5"></i><span>制定核心OKR与数据指标</span></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <!-- Step 2 -->
+                        <div class="step-card group relative flex flex-col items-center text-center reveal delay-200">
+                            <div class="hidden xl:block absolute top-[72px] left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-white border-[3px] border-brand rounded-full z-20 shadow-sm"></div>
+                            <div class="mb-8 lg:mb-12 step-icon-box w-36 h-36 lg:w-40 lg:h-40 rounded-2xl bg-white border-2 border-brand shadow-lg flex items-center justify-center text-brand relative z-30">
+                                <i data-lucide="pen-tool" class="w-16 h-16 opacity-90"></i>
+                                <div class="absolute -top-3 -right-3 w-8 h-8 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">02</div>
+                            </div>
+                            <div class="content-card p-6 lg:p-8 w-full hover:border-blue-200 transition-colors flex-1">
+                                <h3 class="text-xl lg:text-2xl font-bold text-slate-800 mb-2">方案设计</h3>
+                                <p class="text-slate-400 text-xs lg:text-sm mb-6 uppercase tracking-wider">Solution Design</p>
+                                <ul class="text-left space-y-3 text-slate-600 text-sm">
+                                    <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-brand shrink-0 mt-0.5"></i><span>业务流程与交互架构梳理</span></li>
+                                    <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-brand shrink-0 mt-0.5"></i><span>高保真UI与组件规范定义</span></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <!-- Step 3 -->
+                        <div class="step-card group relative flex flex-col items-center text-center reveal delay-300">
+                            <div class="hidden xl:block absolute top-[72px] left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-white border-[3px] border-brand rounded-full z-20 shadow-sm"></div>
+                            <div class="mb-8 lg:mb-12 step-icon-box w-36 h-36 lg:w-40 lg:h-40 rounded-2xl bg-brand-gradient shadow-lg flex items-center justify-center text-white relative z-30 animate-gradient-flow">
+                                <i data-lucide="code-2" class="w-16 h-16 opacity-90"></i>
+                                <div class="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center text-brand font-bold text-sm shadow-md border border-blue-50">03</div>
+                            </div>
+                            <div class="content-card p-6 lg:p-8 w-full hover:border-blue-200 transition-colors flex-1">
+                                <h3 class="text-xl lg:text-2xl font-bold text-slate-800 mb-2">开发实验</h3>
+                                <p class="text-slate-400 text-xs lg:text-sm mb-6 uppercase tracking-wider">Development</p>
+                                <ul class="text-left space-y-3 text-slate-600 text-sm">
+                                    <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-brand shrink-0 mt-0.5"></i><span>前后端敏捷开发与联调</span></li>
+                                    <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-brand shrink-0 mt-0.5"></i><span>A/B Test 灰度发布验证</span></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <!-- Step 4 -->
+                        <div class="step-card group relative flex flex-col items-center text-center reveal delay-400">
+                            <div class="hidden xl:block absolute top-[72px] left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-white border-[3px] border-brand rounded-full z-20 shadow-sm"></div>
+                            <div class="mb-8 lg:mb-12 step-icon-box w-36 h-36 lg:w-40 lg:h-40 rounded-2xl bg-white border-2 border-brand shadow-lg flex items-center justify-center text-brand relative z-30">
+                                <i data-lucide="activity" class="w-16 h-16 opacity-90"></i>
+                                <div class="absolute -top-3 -right-3 w-8 h-8 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">04</div>
+                            </div>
+                            <div class="content-card p-6 lg:p-8 w-full hover:border-blue-200 transition-colors flex-1">
+                                <h3 class="text-xl lg:text-2xl font-bold text-slate-800 mb-2">测试验证</h3>
+                                <p class="text-slate-400 text-xs lg:text-sm mb-6 uppercase tracking-wider">Verification</p>
+                                <ul class="text-left space-y-3 text-slate-600 text-sm">
+                                    <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-brand shrink-0 mt-0.5"></i><span>UAT验收与全链路测试</span></li>
+                                    <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-brand shrink-0 mt-0.5"></i><span>上线数据复盘与迭代规划</span></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <footer class="w-full flex justify-between text-slate-400 mt-auto pt-6 border-t border-slate-50 z-20 text-xs max-w-[1800px] mx-auto">
+                <span>02 / 06 - 阶段性规划</span>
+            </footer>
+        </section>
+
+        <!-- ==================== Page 3: 优化流程 ==================== -->
+        <section class="portfolio-section pt-24 pb-8 px-8 lg:px-16" data-index="2">
+            <div class="bg-blob w-[800px] h-[800px] -bottom-40 -left-40" style="animation-delay: -8s;"></div>
+            <div class="flex-1 flex flex-col lg:flex-row items-center justify-between max-w-[1700px] mx-auto w-full gap-10 lg:gap-20 z-10">
+                
+                <div class="w-full lg:w-[28%] flex flex-col space-y-6 lg:space-y-10 shrink-0 reveal">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-1.5 h-10 bg-brand rounded-sm shadow-md"></div>
+                            <h1 class="text-4xl lg:text-5xl xl:text-6xl font-bold text-slate-900 tracking-tight">优化流程</h1>
+                        </div>
+                        <p class="text-base lg:text-xl text-slate-400 font-light ml-5 mt-1">Problem Solving Process</p>
+                    </div>
+                    <div class="space-y-4">
+                        <h2 class="text-xl lg:text-2xl font-bold text-slate-800">全链路闭环设计</h2>
+                        <p class="text-slate-500 text-sm lg:text-base leading-relaxed">
+                            建立从“问题发现”到“效果验证”的标准化作业流程。通过严谨的节点控制，确保业务需求在流转过程中不失真，最终交付高可用的产品方案。
+                        </p>
+                    </div>
+                    <div class="flex flex-col gap-3 items-start pt-2">
+                        <div class="flex items-center gap-3"><div class="w-2.5 h-2.5 rounded-full bg-[#1677FF] shadow-sm"></div><span class="text-slate-600 text-sm font-medium">发现与定义 (Discovery)</span></div>
+                        <div class="flex items-center gap-3"><div class="w-2.5 h-2.5 rounded-full bg-[#4F46E5] shadow-sm"></div><span class="text-slate-600 text-sm font-medium">构思与设计 (Design)</span></div>
+                        <div class="flex items-center gap-3"><div class="w-2.5 h-2.5 rounded-full bg-[#7C3AED] shadow-sm"></div><span class="text-slate-600 text-sm font-medium">开发与实现 (Develop)</span></div>
+                        <div class="flex items-center gap-3"><div class="w-2.5 h-2.5 rounded-full bg-[#059669] shadow-sm"></div><span class="text-slate-600 text-sm font-medium">验证与发布 (Deliver)</span></div>
+                    </div>
+                </div>
+
+                <div class="w-full lg:w-[72%] relative flex items-center justify-center h-full max-h-[500px] reveal delay-200">
+                    <div class="process-track">
+                        <svg class="connector-svg" preserveAspectRatio="none">
+                            <path class="connector-path-bg" d="M0,5 L2000,5" />
+                            <path class="connector-path-active" d="M0,5 L2000,5" />
+                        </svg>
+                        
+                        <div class="process-card-flow group">
+                            <div class="phase-tag bg-[#1677FF]">PHASE 01</div>
+                            <div class="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center text-[#1677FF] mb-5 group-hover:scale-110 transition-transform border border-blue-100"><i data-lucide="search" class="w-8 h-8"></i></div>
+                            <h3 class="text-lg lg:text-xl font-bold text-slate-800">发现问题</h3><p class="text-slate-400 text-xs mt-1">Discovery</p>
+                            <div class="card-divider"></div>
+                            <div class="sub-step-container">
+                                <span class="sub-step">业务梳理</span><i data-lucide="arrow-down" class="w-3.5 h-3.5 text-slate-300"></i><span class="sub-step">需求讨论</span>
+                            </div>
+                        </div>
+
+                        <div class="process-card-flow group">
+                            <div class="phase-tag bg-[#4F46E5]">PHASE 02</div>
+                            <div class="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-[#4F46E5] mb-5 group-hover:scale-110 transition-transform border border-indigo-100"><i data-lucide="pen-tool" class="w-8 h-8"></i></div>
+                            <h3 class="text-lg lg:text-xl font-bold text-slate-800">方案定义</h3><p class="text-slate-400 text-xs mt-1">Definition</p>
+                            <div class="card-divider"></div>
+                            <div class="sub-step-container">
+                                <span class="sub-step">产品功能</span><i data-lucide="arrow-down" class="w-3.5 h-3.5 text-slate-300"></i><span class="sub-step">交互原型</span>
+                            </div>
+                        </div>
+
+                        <div class="process-card-flow group">
+                            <div class="phase-tag bg-[#7C3AED]">PHASE 03</div>
+                            <div class="w-16 h-16 rounded-2xl bg-violet-50 flex items-center justify-center text-[#7C3AED] mb-5 group-hover:scale-110 transition-transform border border-violet-100"><i data-lucide="layers" class="w-8 h-8"></i></div>
+                            <h3 class="text-lg lg:text-xl font-bold text-slate-800">设计实现</h3><p class="text-slate-400 text-xs mt-1">Development</p>
+                            <div class="card-divider"></div>
+                            <div class="sub-step-container">
+                                <span class="sub-step">UI 设计</span><i data-lucide="arrow-down" class="w-3.5 h-3.5 text-slate-300"></i><span class="sub-step">跟进开发</span>
+                            </div>
+                        </div>
+
+                        <div class="process-card-flow group">
+                            <div class="phase-tag bg-[#059669]">PHASE 04</div>
+                            <div class="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center text-[#059669] mb-5 group-hover:scale-110 transition-transform border border-emerald-100"><i data-lucide="check-circle-2" class="w-8 h-8"></i></div>
+                            <h3 class="text-lg lg:text-xl font-bold text-slate-800">验收闭环</h3><p class="text-slate-400 text-xs mt-1">Delivery</p>
+                            <div class="card-divider"></div>
+                            <div class="sub-step-container">
+                                <span class="sub-step">上线走查</span><i data-lucide="arrow-down" class="w-3.5 h-3.5 text-slate-300"></i><span class="sub-step">测试使用</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <footer class="w-full flex justify-between text-slate-400 mt-auto pt-6 border-t border-slate-50 z-20 text-xs max-w-[1700px] mx-auto">
+                <span>03 / 06 - 闭环方法论</span>
+            </footer>
+        </section>
+
+        <!-- ==================== Page 4: 角色职责 ==================== -->
+        <section class="portfolio-section pt-24 pb-8 px-8 lg:px-16" data-index="3">
+            <div class="bg-blob w-[600px] h-[600px] top-0 left-1/2 -translate-x-1/2" style="animation-delay: -3s;"></div>
+            <div class="w-full max-w-[1700px] mx-auto flex flex-col gap-6 lg:gap-8 z-10 flex-1 justify-center min-h-0">
+                
+                <header class="flex justify-between items-end reveal shrink-0">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <div class="w-1.5 h-8 bg-brand rounded-sm shadow-md"></div>
+                            <h1 class="text-3xl lg:text-4xl font-bold text-slate-900 tracking-tight">角色职责</h1>
+                        </div>
+                        <p class="text-sm lg:text-base text-slate-500 font-light ml-4">My Role & Key Contributions</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl lg:text-2xl font-bold text-brand">UI/UX Designer</div>
+                        <div class="text-slate-400 text-xs lg:text-sm">Project Owner: Admin System Redesign</div>
+                    </div>
+                </header>
+
+                <section class="w-full reveal delay-100 shrink-0">
+                    <div class="flex items-center gap-2 mb-3 lg:mb-4">
+                        <div class="w-7 h-7 rounded-lg bg-blue-50 text-brand flex items-center justify-center"><i data-lucide="map-pin" class="w-4 h-4"></i></div>
+                        <h2 class="text-lg lg:text-xl font-bold text-slate-800">项目协作全流程</h2>
+                    </div>
+                    <div class="workflow-track-container w-full">
+                        <div class="process-node">
+                            <div class="node-index">01</div><div class="node-icon"><i data-lucide="file-text"></i></div>
+                            <h3 class="node-title font-bold text-sm">产品经理</h3>
+                            <div class="mt-1 flex justify-center min-h-[24px] items-center"><p class="node-desc">需求梳理 & PRD</p></div>
+                        </div>
+                        <div class="connector-box px-2"><span class="action-label">需求评审</span><div class="arrow-segment-role"></div></div>
+                        
+                        <div class="process-node active">
+                            <div class="node-index">02</div><div class="node-icon"><i data-lucide="pen-tool"></i></div>
+                            <h3 class="node-title font-bold text-sm">UI/UX 设计师</h3>
+                            <div class="mt-1 flex justify-center min-h-[24px] items-center"><p class="node-desc">体验架构 & 规范</p></div>
+                        </div>
+                        <div class="connector-box px-2"><span class="action-label">设计交付</span><div class="arrow-segment-role"></div></div>
+                        
+                        <div class="process-node">
+                            <div class="node-index">03</div><div class="node-icon"><i data-lucide="code-2"></i></div>
+                            <h3 class="node-title font-bold text-sm">前端开发</h3>
+                            <div class="mt-1 flex justify-center min-h-[24px] items-center"><p class="node-desc">代码还原 & 实现</p></div>
+                        </div>
+                        <div class="connector-box px-2"><span class="action-label">还原验收</span><div class="arrow-segment-role"></div></div>
+                        
+                        <div class="process-node">
+                            <div class="node-index">04</div><div class="node-icon"><i data-lucide="check-circle-2"></i></div>
+                            <h3 class="node-title font-bold text-sm">测试验收</h3>
+                            <div class="mt-1 flex justify-center min-h-[24px] items-center"><p class="node-desc">质量保障 & 上线</p></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="flex flex-col flex-1 min-h-0 reveal delay-200">
+                    <div class="flex items-center gap-2 mb-3 lg:mb-4 shrink-0">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center"><i data-lucide="briefcase" class="w-4 h-4"></i></div>
+                        <h2 class="text-lg lg:text-xl font-bold text-slate-800">核心职责与价值</h2>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5 flex-1 min-h-0">
+                        <!-- 卡片 1 -->
+                        <div class="responsibility-card p-4 lg:p-5">
+                            <div class="w-10 h-10 lg:w-12 lg:h-12 rounded-[10px] bg-blue-50 flex items-center justify-center text-brand mb-3 shrink-0"><i data-lucide="layout" class="w-5 h-5 lg:w-6 lg:h-6"></i></div>
+                            <h3 class="text-base lg:text-lg font-bold text-slate-800 mb-1 shrink-0">界面与交互设计</h3>
+                            <p class="text-slate-400 text-xs mb-3 shrink-0">Interface & Interaction</p>
+                            <div class="flex-1 flex flex-col justify-start min-h-0 overflow-y-auto custom-scrollbar pr-1">
+                                <div class="p-3 bg-slate-50 rounded-lg mb-3 shrink-0">
+                                    <div class="flex items-center gap-2 mb-1.5"><span class="tag-pill tag-problem shrink-0">Challenge</span><span class="text-xs font-bold text-slate-700">操作路径冗长</span></div>
+                                    <div class="flex items-center gap-2"><span class="tag-pill tag-solution shrink-0">Solution</span><span class="text-xs text-slate-600">重构架构，点击减少 40%</span></div>
+                                </div>
+                                <ul class="text-slate-500 text-xs space-y-2 list-disc pl-4 mt-auto shrink-0 pb-1">
+                                    <li>输出高保真视觉稿 (UI)</li>
+                                    <li>制作动态交互演示 (Prototyping)</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <!-- 卡片 2 -->
+                        <div class="responsibility-card p-4 lg:p-5">
+                            <div class="w-10 h-10 lg:w-12 lg:h-12 rounded-[10px] bg-indigo-50 flex items-center justify-center text-indigo-600 mb-3 shrink-0"><i data-lucide="library" class="w-5 h-5 lg:w-6 lg:h-6"></i></div>
+                            <h3 class="text-base lg:text-lg font-bold text-slate-800 mb-1 shrink-0">设计系统搭建</h3>
+                            <p class="text-slate-400 text-xs mb-3 shrink-0">Design System</p>
+                            <div class="flex-1 flex flex-col justify-start min-h-0 overflow-y-auto custom-scrollbar pr-1">
+                                <div class="p-3 bg-slate-50 rounded-lg mb-3 shrink-0">
+                                    <div class="flex items-center gap-2 mb-1.5"><span class="tag-pill tag-problem shrink-0">Challenge</span><span class="text-xs font-bold text-slate-700">视觉风格不统一</span></div>
+                                    <div class="flex items-center gap-2"><span class="tag-pill tag-solution shrink-0">Solution</span><span class="text-xs text-slate-600">建立原子化组件库，统一全站</span></div>
+                                </div>
+                                <ul class="text-slate-500 text-xs space-y-2 list-disc pl-4 mt-auto shrink-0 pb-1">
+                                    <li>定义色彩/字体/间距规范</li>
+                                    <li>维护 Figma 组件库资产</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <!-- 卡片 3 -->
+                        <div class="responsibility-card p-4 lg:p-5">
+                            <div class="w-10 h-10 lg:w-12 lg:h-12 rounded-[10px] bg-violet-50 flex items-center justify-center text-violet-600 mb-3 shrink-0"><i data-lucide="check-square" class="w-5 h-5 lg:w-6 lg:h-6"></i></div>
+                            <h3 class="text-base lg:text-lg font-bold text-slate-800 mb-1 shrink-0">设计走查与验收</h3>
+                            <p class="text-slate-400 text-xs mb-3 shrink-0">Design QA & Hand-off</p>
+                            <div class="flex-1 flex flex-col justify-start min-h-0 overflow-y-auto custom-scrollbar pr-1">
+                                <div class="p-3 bg-slate-50 rounded-lg mb-3 shrink-0">
+                                    <div class="flex items-center gap-2 mb-1.5"><span class="tag-pill tag-problem shrink-0">Challenge</span><span class="text-xs font-bold text-slate-700">开发还原度低</span></div>
+                                    <div class="flex items-center gap-2"><span class="tag-pill tag-solution shrink-0">Solution</span><span class="text-xs text-slate-600">标准化切图，还原度提升至 98%</span></div>
+                                </div>
+                                <ul class="text-slate-500 text-xs space-y-2 list-disc pl-4 mt-auto shrink-0 pb-1">
+                                    <li>编写详细的设计标注文档</li>
+                                    <li>进行 UI 走查并输出修改清单</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <footer class="w-full flex justify-between text-slate-400 mt-auto pt-6 border-t border-slate-50 z-20 text-xs max-w-[1700px] mx-auto">
+                <span>04 / 06 - 角色定位与协作</span>
+            </footer>
+        </section>
+
+        <!-- ==================== Page 5: 设计需求整理 ==================== -->
+        <section class="portfolio-section pt-24 pb-8 px-8 lg:px-16" data-index="4">
+            <div class="flex-1 flex flex-col max-w-[1600px] mx-auto w-full z-10 min-h-0">
+                <header class="flex justify-between items-end mb-6 shrink-0 reveal">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <div class="w-1.5 h-8 bg-brand rounded-sm shadow-md"></div>
+                            <h1 class="text-3xl lg:text-4xl font-bold text-slate-900 tracking-tight">设计需求整理</h1>
+                        </div>
+                        <p class="text-sm lg:text-base text-slate-500 font-light ml-4">从业务痛点到设计策略的推导过程</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-slate-400 text-xs lg:text-sm">Bridging Business Goals & User Needs</div>
+                    </div>
+                </header>
+
+                <div class="list-header shrink-0 reveal delay-100">
+                    <div>需求名称</div><div>优先级</div><div>产品需求详情 (要做什么)</div><div>设计解决方案 (怎么设计)</div>
+                </div>
+
+                <div class="w-full flex-1 flex flex-col justify-start gap-3 lg:gap-4 min-h-0 overflow-y-auto custom-scrollbar pr-2 pb-2">
+                    <div class="req-row shrink-0 reveal delay-100">
+                        <div class="req-name"><i data-lucide="users" class="w-[18px] h-[18px] text-[#1677FF]"></i>角色权限</div>
+                        <div><span class="priority-badge p0-badge">P0 高优</span></div>
+                        <div class="content-text lg:pr-6">店长、收银员、仓库管理，大家的工作不一样，看到的后台菜单也得不一样，别互相干扰。</div>
+                        <div class="design-solution">
+                            <div class="design-title"><i data-lucide="layout" class="w-3.5 h-3.5"></i> 差异化导航菜单</div>
+                            <div class="content-text">根据登录角色自动隐藏无关菜单，仓库员进去只看得到库存，界面更清爽。</div>
+                        </div>
+                    </div>
+                    <div class="req-row shrink-0 reveal delay-200">
+                        <div class="req-name"><i data-lucide="package" class="w-[18px] h-[18px] text-[#1677FF]"></i>商品管理</div>
+                        <div><span class="priority-badge p0-badge">P0 高优</span></div>
+                        <div class="content-text lg:pr-6">一件衣服有红黄蓝好几种颜色，S/M/L好几个尺码，上架的时候要能一次性把价格和库存填好。</div>
+                        <div class="design-solution">
+                            <div class="design-title"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i> 批量编辑表格</div>
+                            <div class="content-text">设计了“一键填充”功能，填一个数字，所有颜色的库存自动同步，不用一个个敲。</div>
+                        </div>
+                    </div>
+                    <div class="req-row shrink-0 reveal delay-300">
+                        <div class="req-name"><i data-lucide="truck" class="w-[18px] h-[18px] text-[#1677FF]"></i>订单状态</div>
+                        <div><span class="priority-badge p0-badge">P0 高优</span></div>
+                        <div class="content-text lg:pr-6">从下单、付款、发货到完成，状态变来变去，商家得一眼看出来这单子现在卡在哪儿了。</div>
+                        <div class="design-solution">
+                            <div class="design-title"><i data-lucide="git-commit" class="w-3.5 h-3.5"></i> 进度条可视化</div>
+                            <div class="content-text">用横向步骤条展示订单进度，当前状态亮灯显示，下一步操作按钮加粗高亮。</div>
+                        </div>
+                    </div>
+                    <div class="req-row shrink-0 reveal delay-400">
+                        <div class="req-name"><i data-lucide="alert-circle" class="w-[18px] h-[18px] text-[#1677FF]"></i>库存预警</div>
+                        <div><span class="priority-badge p1-badge">P1 普通</span></div>
+                        <div class="content-text lg:pr-6">货快卖完了得赶紧提醒商家补货，不然客户下单了发不出货很麻烦。</div>
+                        <div class="design-solution">
+                            <div class="design-title"><i data-lucide="bell" class="w-3.5 h-3.5"></i> 红色缺货提醒</div>
+                            <div class="content-text">在首页放个显眼的“缺货看板”，库存低于10件的商品标红展示，一眼就能看到。</div>
+                        </div>
+                    </div>
+                    <div class="req-row shrink-0 reveal delay-400">
+                        <div class="req-name"><i data-lucide="ticket" class="w-[18px] h-[18px] text-[#1677FF]"></i>营销活动</div>
+                        <div><span class="priority-badge p1-badge">P1 普通</span></div>
+                        <div class="content-text lg:pr-6">搞满减、发优惠券，规则设置不能太复杂，商家可能会配错，得让他们知道配出来啥样。</div>
+                        <div class="design-solution">
+                            <div class="design-title"><i data-lucide="smartphone" class="w-3.5 h-3.5"></i> 实时手机预览</div>
+                            <div class="content-text">左边填规则，右边直接显示手机上的效果图，所见即所得，防止配错活动。</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <footer class="w-full flex justify-between text-slate-400 mt-auto pt-6 border-t border-slate-50 z-20 text-xs max-w-[1600px] mx-auto">
+                <span>05 / 06 - 策略推导</span>
+            </footer>
+        </section>
+
+        <!-- ==================== Page 6: 用户声浪 ==================== -->
+        <section class="portfolio-section pt-24 pb-8 px-8 lg:px-16" data-index="5">
+            <div class="bg-blob w-[500px] h-[500px] bottom-0 left-[-100px]" style="animation-delay: -10s;"></div>
+            <div class="w-full max-w-[1600px] mx-auto flex flex-col h-full z-10 flex-1 min-h-0">
+                <header class="flex justify-between items-end mb-6 shrink-0 reveal">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <div class="w-1.5 h-8 bg-brand rounded-sm shadow-md"></div>
+                            <h1 class="text-3xl lg:text-4xl font-bold text-slate-900 tracking-tight">用户声浪与痛点</h1>
+                        </div>
+                        <p class="text-sm lg:text-base text-slate-500 font-light ml-4">User Voice & Pain Points</p>
+                    </div>
+                    <div class="flex gap-4 sm:gap-6 bg-slate-50 px-4 py-1.5 rounded-full border border-slate-100 pb-1">
+                        <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#E11D48]"></span><span class="text-xs sm:text-sm text-slate-600 font-medium">高频痛点 (P0)</span></div>
+                        <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#F97316]"></span><span class="text-xs sm:text-sm text-slate-600 font-medium">一般痛点 (P1)</span></div>
+                    </div>
+                </header>
+
+                <div class="voice-container reveal delay-100">
+                    <div class="scrollable-track">
+                        <div class="track-inner">
+                            
+                            <div class="phase-header-row">
+                                <div class="phase-title-card">商品录入</div><div class="phase-title-card">订单交易</div><div class="phase-title-card">库存履约</div><div class="phase-title-card">经营决策</div>
+                            </div>
+
+                            <div class="danmaku-track-area">
+                                <div class="swim-lane-bg"><div class="lane-divider"></div><div class="lane-divider"></div><div class="lane-divider"></div><div class="lane-divider"></div></div>
+                                
+                                <div class="lane-col flex flex-col pt-4 px-2">
+                                    <div class="danmaku-pill"><div class="role-circle bg-blue-100 text-blue-600"><i data-lucide="user" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">规格太多填半天！<span class="tag-pain tag-high">P0</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-blue-50 text-blue-400"><i data-lucide="user" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">能一键复制老商品吗？<span class="tag-pain tag-mid">P1</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-blue-50 text-blue-400"><i data-lucide="user" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">手机端没法用。<span class="tag-pain tag-high">P0</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-blue-50 text-blue-400"><i data-lucide="user" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">批量改价入口太深。<span class="tag-pain tag-mid">P1</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-blue-100 text-blue-600"><i data-lucide="user" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">图片上传失败无提示。<span class="tag-pain tag-mid">P1</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-blue-50 text-blue-400"><i data-lucide="user" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">分类选错能改吗？<span class="tag-pain tag-mid">P1</span></span></div>
+                                </div>
+                                <div class="lane-col flex flex-col pt-8 px-2">
+                                    <div class="danmaku-pill"><div class="role-circle bg-indigo-100 text-indigo-600"><i data-lucide="headphones" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">急单找不到！<span class="tag-pain tag-high">P0</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-indigo-50 text-indigo-400"><i data-lucide="user" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">导出直接卡死。<span class="tag-pain tag-high">P0</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-indigo-50 text-indigo-400"><i data-lucide="file-text" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">备注太不显眼。<span class="tag-pain tag-mid">P1</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-indigo-100 text-indigo-600"><i data-lucide="user" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">退款流程太繁琐。<span class="tag-pain tag-mid">P1</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-indigo-50 text-indigo-400"><i data-lucide="user" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">找不到历史订单。<span class="tag-pain tag-mid">P1</span></span></div>
+                                </div>
+                                <div class="lane-col flex flex-col pt-2 px-2">
+                                    <div class="danmaku-pill"><div class="role-circle bg-violet-100 text-violet-600"><i data-lucide="package-check" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">有货显示空的？<span class="tag-pain tag-high">P0</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-violet-50 text-violet-400"><i data-lucide="user" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">手工盘点眼瞎了。<span class="tag-pain tag-mid">P1</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-violet-50 text-violet-400"><i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">超卖被投诉。<span class="tag-pain tag-high">P0</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-violet-100 text-violet-600"><i data-lucide="user" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">库存预警没提醒。<span class="tag-pain tag-high">P0</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-violet-50 text-violet-400"><i data-lucide="scan" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">扫码枪连不上。<span class="tag-pain tag-mid">P1</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-violet-100 text-violet-600"><i data-lucide="truck" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">调拨单审核太慢。<span class="tag-pain tag-mid">P1</span></span></div>
+                                </div>
+                                <div class="lane-col flex flex-col pt-6 px-2">
+                                    <div class="danmaku-pill"><div class="role-circle bg-emerald-100 text-emerald-600"><i data-lucide="trending-up" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">看不了总销售额！<span class="tag-pain tag-high">P0</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-emerald-50 text-emerald-400"><i data-lucide="user" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">活动效果未知。<span class="tag-pain tag-mid">P1</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-emerald-50 text-emerald-400"><i data-lucide="pie-chart" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">报表加载太慢。<span class="tag-pain tag-mid">P1</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-emerald-100 text-emerald-600"><i data-lucide="users" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">想看同比数据。<span class="tag-pain tag-mid">P1</span></span></div>
+                                    <div class="danmaku-pill"><div class="role-circle bg-emerald-50 text-emerald-400"><i data-lucide="user" class="w-3.5 h-3.5"></i></div><span class="danmaku-text">多店数据不互通。<span class="tag-pain tag-high">P0</span></span></div>
+                                </div>
+                            </div>
+
+                            <div class="analysis-section reveal delay-200">
+                                <div class="flex flex-col items-center w-full"><div class="connector-arrow"><i data-lucide="arrow-down" class="w-4 h-4"></i></div><div class="insight-pill"><div class="insight-icon-box"><i data-lucide="zap-off" class="w-4 h-4"></i></div><div class="insight-content"><div class="insight-title">录入效率低</div><div class="insight-desc">缺乏批量工具与移动端，机械重复。</div></div></div></div>
+                                <div class="flex flex-col items-center w-full"><div class="connector-arrow"><i data-lucide="arrow-down" class="w-4 h-4"></i></div><div class="insight-pill"><div class="insight-icon-box"><i data-lucide="eye-off" class="w-4 h-4"></i></div><div class="insight-content"><div class="insight-title">流程不透明</div><div class="insight-desc">急单异常单易漏视，协同成本高。</div></div></div></div>
+                                <div class="flex flex-col items-center w-full"><div class="connector-arrow"><i data-lucide="arrow-down" class="w-4 h-4"></i></div><div class="insight-pill"><div class="insight-icon-box"><i data-lucide="database-zap" class="w-4 h-4"></i></div><div class="insight-content"><div class="insight-title">数据不准确</div><div class="insight-desc">线下实物脱节，人工录入延迟高。</div></div></div></div>
+                                <div class="flex flex-col items-center w-full"><div class="connector-arrow"><i data-lucide="arrow-down" class="w-4 h-4"></i></div><div class="insight-pill"><div class="insight-icon-box"><i data-lucide="bar-chart-big" class="w-4 h-4"></i></div><div class="insight-content"><div class="insight-title">决策无支撑</div><div class="insight-desc">数据孤岛效应，缺乏全局视角。</div></div></div></div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <footer class="w-full flex justify-between text-slate-400 mt-auto pt-6 border-t border-slate-50 z-20 text-xs max-w-[1600px] mx-auto">
+                <span>06 / 06 - 调研与分析</span>
+            </footer>
+        </section>
+
+    </div>
+
+    <!-- 交互脚本 -->
+    <script>
+        lucide.createIcons();
+
+        // 角色职责页面悬浮逻辑
+        const processNodes = document.querySelectorAll('.process-node');
+        processNodes.forEach(node => {
+            node.addEventListener('mouseenter', () => {
+                processNodes.forEach(n => n.classList.remove('active'));
+                node.classList.add('active');
+            });
+        });
+
+        /* ================= 核心全屏滚动及动态点状进度条逻辑 ================= */
+        const wrapper = document.getElementById('fullpage-wrapper');
+        const sections = document.querySelectorAll('.portfolio-section');
+        const progressTrack = document.getElementById('progress-nav');
+        
+        const totalPages = sections.length;
+        let currentPage = 0;
+        let isAnimating = false;
+
+        // 1. 初始化动态生成点状导航
+        for(let i = 0; i < totalPages; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'nav-dot';
+            progressTrack.appendChild(dot);
+        }
+        // 2. 生成拖动滑块(Thumb)
+        const progressThumb = document.createElement('div');
+        progressThumb.id = 'progress-thumb';
+        progressTrack.appendChild(progressThumb);
+        const dots = progressTrack.querySelectorAll('.nav-dot');
+
+        // 将滑块吸附到特定的圆点中心
+        function updateThumbPosition(index) {
+            if(!dots[index]) return;
+            const targetDot = dots[index];
+            const trackRect = progressTrack.getBoundingClientRect();
+            // 获取目标圆点相对 track 容器顶部的 Y 坐标，加上其一半高度就是中心
+            const dotY = targetDot.offsetTop + (targetDot.offsetHeight / 2);
+            progressThumb.style.top = `${dotY}px`;
+        }
+
+        // 核心跳转函数
+        window.goToSlide = function(index) {
+            if (index < 0 || index >= totalPages) return;
+            
+            currentPage = index;
+            
+            // 切换页面 Y 轴平移
+            wrapper.style.transform = `translateY(-${currentPage * 100}vh)`;
+            
+            // 如果不在拖拽状态，滑块需要跟随页面切场自动移动
+            if(!isDragging) {
+                updateThumbPosition(currentPage);
+            }
+
+            // 重置并触发页面内部元素的出场动画
+            triggerAnimations(currentPage);
+
+            // 解锁滚动侦测
+            isAnimating = true;
+            setTimeout(() => { isAnimating = false; }, 800); // 与 CSS 中的 transform 耗时一致
+        }
+
+        // 动画触发逻辑
+        function triggerAnimations(pageIndex) {
+            sections.forEach((sec, i) => {
+                const reveals = sec.querySelectorAll('.reveal');
+                if (i === pageIndex) {
+                    // 当前页的元素依次进场
+                    setTimeout(() => {
+                        reveals.forEach(el => el.classList.add('active'));
+                    }, 100);
+                } else {
+                    // 延迟 800ms 重置非当前页状态，确保在滚出屏幕后再重置，防止突然闪现消失
+                    setTimeout(() => {
+                        if (currentPage !== i) {
+                            reveals.forEach(el => el.classList.remove('active'));
+                        }
+                    }, 800);
+                }
+            });
+        }
+
+        // 鼠标滚轮事件侦测
+        window.addEventListener('wheel', (e) => {
+            if (isAnimating || isDragging) return;
+            if (e.deltaY > 50) {
+                goToSlide(currentPage + 1); // 往下滑
+            } else if (e.deltaY < -50) {
+                goToSlide(currentPage - 1); // 往上滑
+            }
+        });
+
+        // 触控板/移动端滑动支持
+        let touchStartY = 0;
+        window.addEventListener('touchstart', e => { touchStartY = e.changedTouches[0].screenY; }, { passive: true });
+        window.addEventListener('touchend', e => {
+            if (isAnimating || isDragging) return;
+            let touchEndY = e.changedTouches[0].screenY;
+            if (touchStartY - touchEndY > 50) goToSlide(currentPage + 1);
+            else if (touchEndY - touchStartY > 50) goToSlide(currentPage - 1);
+        }, { passive: true });
+
+        /* ================= 点状进度条拖拽逻辑 ================= */
+        let isDragging = false;
+
+        function updateFromDrag(e) {
+            const trackRect = progressTrack.getBoundingClientRect();
+            // 计算鼠标相对于容器的 Y 坐标
+            let y = e.clientY - trackRect.top;
+            y = Math.max(0, Math.min(y, trackRect.height)); // 限制在轨道内
+            
+            // 取消过渡动画，让滑块死死跟住鼠标
+            progressThumb.style.transition = 'none';
+            progressThumb.style.top = `${y}px`;
+
+            // 计算当前距离鼠标Y坐标最近的圆点
+            let closestIndex = 0;
+            let minDiff = Infinity;
+            
+            dots.forEach((dot, i) => {
+                const dotY = dot.offsetTop + (dot.offsetHeight / 2);
+                const diff = Math.abs(y - dotY);
+                if(diff < minDiff) {
+                    minDiff = diff;
+                    closestIndex = i;
+                }
+            });
+            
+            // 若最近的页码发生变化，执行无阻尼的静默切页
+            if (closestIndex !== currentPage) {
+                currentPage = closestIndex;
+                wrapper.style.transform = `translateY(-${currentPage * 100}vh)`;
+                triggerAnimations(currentPage);
+            }
+        }
+
+        // 鼠标按下进度条区域
+        progressTrack.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            document.body.style.userSelect = 'none'; // 防止拖拽时误选中文字
+            updateFromDrag(e);
+        });
+
+        // 鼠标拖动
+        window.addEventListener('mousemove', (e) => {
+            if (isDragging) updateFromDrag(e);
+        });
+
+        // 鼠标松开
+        window.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                document.body.style.userSelect = '';
+                
+                // 恢复过渡动画，并将滑块精准吸附回当前页的中心点
+                progressThumb.style.transition = 'top 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                updateThumbPosition(currentPage);
+            }
+        });
+
+        // 窗口大小变化时重绘并重新定位指示器
+        window.addEventListener('resize', () => {
+            wrapper.style.transform = `translateY(-${currentPage * 100}vh)`;
+            updateThumbPosition(currentPage);
+        });
+
+        // 首次加载初始化定位
+        setTimeout(() => {
+            updateThumbPosition(0);
+            goToSlide(0);
+        }, 100);
+
+    </script>
+</body>
+</html>

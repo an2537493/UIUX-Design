@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>开言社 IP 形象插画展示</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --brand-yellow: #EFC519;
+            --text-main: #1A1A1A;
+        }
+
+        body {
+            /* 整体使用极浅的暖白底色，呼应主题色 */
+            background-color: #FEFCF8; 
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            position: relative;
+            z-index: 0;
+            overflow-x: hidden;
+            /* 隐藏右侧灰色滚动条 */
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        body::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* 优化后的悬浮效果，融入了一点主题色的光晕 */
+        .img-container {
+            transition: transform 0.5s ease, box-shadow 0.5s ease;
+        }
+        .img-container:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 25px 30px -5px rgba(239, 197, 25, 0.15), 0 10px 15px -5px rgba(239, 197, 25, 0.05);
+        }
+        
+        /* 统一为主题色的极浅点阵背景 */
+        .bg-dots {
+            background-image: radial-gradient(rgba(239, 197, 25, 0.25) 1.5px, transparent 1.5px);
+            background-size: 40px 40px;
+        }
+
+        /* 滚动进入动画 */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ================= 控制按钮样式 ================= */
+        .back-btn {
+            position: fixed; top: 40px; left: 40px; z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+            width: 44px; height: 44px;
+            color: #64748B; text-decoration: none; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px);
+            border: 1px solid #E2E8F0; box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            transition: all 0.3s ease;
+        }
+        .back-btn svg { width: 22px; height: 22px; transition: transform 0.3s ease; }
+        .back-btn:hover { color: #1A1A1A; border-color: #EFC519; background: #FFFBEB; }
+        .back-btn:hover svg { transform: translateX(-3px); }
+
+        /* 回到顶部按钮 */
+        .back-to-top-btn {
+            position: fixed; bottom: 40px; right: 40px; z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+            width: 48px; height: 48px;
+            color: #1A1A1A; text-decoration: none; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
+            border: 1px solid #E2E8F0; box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            opacity: 0; visibility: hidden; transform: translateY(20px); cursor: pointer;
+        }
+        .back-to-top-btn.show { opacity: 1; visibility: visible; transform: translateY(0); }
+        .back-to-top-btn svg { width: 24px; height: 24px; transition: transform 0.3s ease; }
+        .back-to-top-btn:hover { 
+            background: #EFC519; border-color: #EFC519; color: #1A1A1A;
+            transform: translateY(-5px); box-shadow: 0 10px 25px rgba(239, 197, 25, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .back-btn { top: 20px; left: 20px; width: 40px; height: 40px; }
+            .back-to-top-btn { bottom: 20px; right: 20px; width: 44px; height: 44px; }
+        }
+    </style>
+</head>
+<body class="antialiased text-gray-800 min-h-screen flex flex-col relative">
+
+    <!-- 返回上一级按钮 -->
+    <a href="index.html#page-4" class="back-btn" aria-label="返回">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+    </a>
+
+    <!-- 回到顶部按钮 -->
+    <button id="backToTop" class="back-to-top-btn" aria-label="回到顶部">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+        </svg>
+    </button>
+
+    <!-- 装饰性背景：重整后的 点、线、面 (对角线规整排版) -->
+    <div class="fixed inset-0 z-[-1] pointer-events-none">
+        <!-- 点 (Dot grid) -->
+        <div class="absolute inset-0 bg-dots opacity-50"></div>
+        
+        <!-- 面 (Planes) - 简化为对角线呼应 -->
+        <!-- 右上角：柔和的圆面 -->
+        <div class="absolute -top-32 -right-32 w-[35rem] h-[35rem] bg-[#EFC519] rounded-full opacity-[0.04] blur-xl"></div>
+        <!-- 左下角：倾斜的圆角矩形 -->
+        <div class="absolute bottom-10 -left-20 w-[24rem] h-[30rem] bg-[#EFC519] rounded-[4rem] rotate-[-15deg] opacity-[0.03] border border-[#EFC519]/20 backdrop-blur-sm"></div>
+
+        <!-- 线 (Lines) - 结构化、严谨的辅助线 -->
+        <!-- 左侧贯穿垂直线 -->
+        <div class="absolute top-0 left-8 md:left-16 w-[1px] h-full bg-gradient-to-b from-transparent via-[#EFC519]/20 to-transparent"></div>
+        <!-- 右侧贯穿垂直线 -->
+        <div class="absolute top-0 right-8 md:right-16 w-[1px] h-full bg-[#EFC519]/10"></div>
+        
+        <!-- 十字定位符 (干净的细节) -->
+        <div class="absolute top-24 left-8 md:left-16 w-6 h-6 -translate-x-1/2 -translate-y-1/2 opacity-40">
+            <div class="absolute top-1/2 left-0 w-full h-[1px] bg-[#EFC519]"></div>
+            <div class="absolute top-0 left-1/2 w-[1px] h-full bg-[#EFC519]"></div>
+        </div>
+        <div class="absolute bottom-32 right-8 md:right-16 w-4 h-4 -translate-x-1/2 -translate-y-1/2 opacity-30">
+            <div class="absolute top-1/2 left-0 w-full h-[1px] bg-[#EFC519]"></div>
+            <div class="absolute top-0 left-1/2 w-[1px] h-full bg-[#EFC519]"></div>
+        </div>
+    </div>
+
+    <!-- 页面头部 (调整了与另外两个页面一致的顶部间距 pt-24 md:pt-32) -->
+    <header class="w-full max-w-7xl mx-auto pt-24 pb-16 md:pt-32 md:pb-24 px-6 relative z-10">
+        
+        <!-- ================= 新增：顶部横向跳转导航栏 ================= -->
+        <div class="flex justify-center mb-12 reveal">
+            <nav class="bg-white/60 backdrop-blur-md border border-[#EFC519]/30 rounded-full shadow-[0_8px_20px_rgba(239,197,25,0.08)] p-1.5 flex items-center gap-1 md:gap-2 max-w-full overflow-x-auto whitespace-nowrap">
+                <a href="logo.html" class="px-5 md:px-8 py-2 md:py-2.5 rounded-full text-gray-500 hover:text-gray-900 hover:bg-[#EFC519]/10 transition-all text-sm font-medium">
+                    Logo 设计
+                </a>
+                <a href="ip-design.html" class="px-5 md:px-8 py-2 md:py-2.5 rounded-full text-gray-500 hover:text-gray-900 hover:bg-[#EFC519]/10 transition-all text-sm font-medium">
+                    IP 形象设计
+                </a>
+                <!-- 当前页面处于激活状态，应用主题色背景 -->
+                <a href="illustration.html" class="px-5 md:px-8 py-2 md:py-2.5 rounded-full bg-[#EFC519] text-gray-900 shadow-sm transition-all text-sm font-bold pointer-events-none">
+                    插画展示
+                </a>
+            </nav>
+        </div>
+        <!-- ================= 导航栏结束 ================= -->
+
+        <div class="reveal">
+            <div class="inline-flex items-center gap-2 px-3 py-1 mb-6 border border-[#EFC519] bg-[#EFC519]/5 rounded-full text-xs font-bold tracking-widest text-[#D4A900]">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#EFC519]"></span>
+                BRAND ILLUSTRATIONS
+            </div>
+            <h1 class="text-4xl md:text-6xl font-black tracking-tight leading-tight mb-6 text-gray-900">
+                <span class="text-[#EFC519] mr-4">|</span>开言社 IP 形象插画展示
+                <span class="block text-gray-300 text-3xl md:text-5xl mt-2 font-light tracking-wide ml-12">Brand Mascot Illustrations</span>
+            </h1>
+            <p class="text-lg text-gray-500 max-w-2xl leading-relaxed ml-12">
+                欢迎来到开言社的奇妙世界。在这里，我们为您独家呈现开言社专属 IP 形象系列插画，可爱的橘猫助手将陪伴您记录每一次语言探索、沉浸学习与自我治愈的珍贵瞬间。
+            </p>
+        </div>
+    </header>
+
+    <!-- 主体画廊部分 -->
+    <main class="w-full max-w-7xl mx-auto px-6 pb-24 flex flex-col gap-24 md:gap-32 flex-grow relative z-10">
+        
+        <!-- 第一张图：春日探索 -->
+        <section class="flex flex-col items-center w-full group reveal">
+            <div class="w-full img-container rounded-2xl overflow-hidden bg-white border border-[#EFC519]/10 p-2 md:p-3">
+                <div class="w-full rounded-xl overflow-hidden bg-gray-50">
+                    <img src="image/spring.jpg" alt="开言社 - 春日探索" class="w-full h-auto block object-contain">
+                </div>
+            </div>
+            <div class="mt-8 text-center max-w-3xl px-4">
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center justify-center gap-3">
+                    <span class="w-2 h-2 rounded-full bg-[#EFC519]"></span>
+                    春日探索
+                    <span class="w-2 h-2 rounded-full bg-[#EFC519]"></span>
+                </h2>
+                <p class="text-base text-gray-500 mt-4 leading-loose">
+                    带着心爱的寻宝地图，在繁花盛开的春日里寻找未知的风景。开言社的 IP 小助手与你一起，在充满生机的大自然中开启一段奇妙的新旅程，探索语言与世界的广阔边界。
+                </p>
+            </div>
+        </section>
+
+        <!-- 第二张图：沉浸伴学 -->
+        <section class="flex flex-col items-center w-full group reveal">
+            <div class="w-full img-container rounded-2xl overflow-hidden bg-white border border-[#EFC519]/10 p-2 md:p-3">
+                <div class="w-full rounded-xl overflow-hidden bg-gray-50">
+                    <img src="image/study.jpg" alt="开言社 - 沉浸伴学" class="w-full h-auto block object-contain">
+                </div>
+            </div>
+            <div class="mt-8 text-center max-w-3xl px-4">
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center justify-center gap-3">
+                    <span class="w-2 h-2 rounded-full bg-[#EFC519]"></span>
+                    沉浸伴学
+                    <span class="w-2 h-2 rounded-full bg-[#EFC519]"></span>
+                </h2>
+                <p class="text-base text-gray-500 mt-4 leading-loose">
+                    温暖的阳光透过半开的窗户洒满书桌，伴随着淡淡的书香与窗外清脆的鸟鸣。在开言社度过了充实专注的阅读时光后，戴着大眼镜的小助手也忍不住趴在厚厚的书本上，打起了甜甜的瞌睡。
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="w-full text-center py-10 text-gray-400 text-sm border-t border-[#EFC519]/20 bg-[#FEFCF8]/80 backdrop-blur-md mt-auto relative z-10">
+        <p class="tracking-wider">&copy; 2026 开言社 KAIYAN SHE. ALL RIGHTS RESERVED.</p>
+    </footer>
+
+    <!-- 滚动与交互脚本 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // 元素出现动画
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.15 
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.reveal').forEach((el) => {
+                observer.observe(el);
+            });
+
+            // 回到顶部按钮逻辑
+            const backToTopBtn = document.getElementById('backToTop');
+            
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 400) {
+                    backToTopBtn.classList.add('show');
+                } else {
+                    backToTopBtn.classList.remove('show');
+                }
+            });
+
+            backToTopBtn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>

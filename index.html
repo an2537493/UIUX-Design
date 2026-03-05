@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UIUX 交互作品集展示</title>
+    
+    <!-- 全局字体资源 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Tailwind 统一配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            yellow: '#EFC519',
+                            black: '#1A1A1A',
+                            cream: '#FFFCF5',
+                            accent: '#DDAD65',
+                            gray: '#F5F6F8',
+                            blue: '#1677FF',
+                            dark: '#001529',
+                            bg: '#F0F2F5',
+                            text: '#1F2937',
+                            card: 'rgba(255, 255, 255, 0.7)',
+                            cardHover: 'rgba(255, 255, 255, 0.95)'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans SC"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'soft': '0 20px 50px -10px rgba(0,0,0,0.08)',
+                        'glow': '0 0 40px rgba(239, 197, 25, 0.3)',
+                        'card-hover': '0 30px 60px -15px rgba(239, 197, 25, 0.2)',
+                        'panel': '0 25px 50px -12px rgba(0,0,0,0.15)',
+                        'card': '0 2px 8px rgba(0,0,0,0.06)',
+                        'hover': '0 10px 25px -5px rgba(22, 119, 255, 0.15)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* ================= 0. 全局物理滚动容器 ================= */
+        html, body {
+            margin: 0; padding: 0;
+            width: 100vw; height: 100vh;
+            overflow: hidden;
+            background-color: #1A1A1A;
+            font-family: "Noto Sans SC", -apple-system, sans-serif;
+        }
+
+        .scroll-container {
+            width: 100vw; height: 100vh;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            overscroll-behavior-y: none;
+        }
+        .scroll-container::-webkit-scrollbar { display: none; }
+
+        .section {
+            width: 100vw; height: 100vh;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+            transform: translateZ(0);
+        }
+
+        ::selection { background-color: #EFC519; color: #1A1A1A; }
+
+        /* ================= 1. 封面页 ================= */
+        .section-1 {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+            background-color: #FDFCF8;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .section-1 .page-container { width: 100%; height: 100%; position: relative; }
+        .section-1 .font-serif-elegant { font-family: 'Playfair Display', serif; }
+        .section-1 .interactive-layer { transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); will-change: transform; }
+        .section-1 .animate-fade-up { opacity: 0; animation: coverFadeUp 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .section-1 .animate-fade-in { opacity: 0; animation: coverFadeIn 2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .section-1 .delay-100 { animation-delay: 100ms; }
+        .section-1 .delay-300 { animation-delay: 300ms; }
+        .section-1 .delay-500 { animation-delay: 500ms; }
+        .section-1 .delay-700 { animation-delay: 700ms; }
+        @keyframes coverFadeUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes coverFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .section-1 .blur-layer { transform: translateZ(0); will-change: transform, opacity; }
+
+        /* ================= 2. 开言社 ================= */
+        :root {
+            --brand-yellow: #EFC519; --brand-black: #1A1A1A; --brand-cream: #FFFCF5; --brand-brown: #723E0F;
+            --text-primary: #FFFFFF; --text-secondary: #999999; --bg-dark: #0f0f0f;
+            --fs-nav: 18px; --fw-nav: 500; --fs-body: 14px; --fw-body: 400; --fs-caption: 11px; --fw-caption: 300; --color-caption: #999999;
+            --phone-scale: 0.85; 
+        }
+        .section-2 {
+            font-family: "SF Pro Display", "SF Pro Text", "PingFang SC", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background: radial-gradient(circle at 80% 20%, #2a2615 0%, #151515 40%, #050505 100%);
+            color: var(--text-primary);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .section-2 .bg-grid {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
+            --grid-size: clamp(40px, 5vw, 80px); --grid-line-color: rgba(255, 255, 255, 0.03); 
+            background-image: radial-gradient(circle clamp(200px, 20vw, 350px) at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(239, 197, 25, 0.12), transparent 50%), linear-gradient(to right, var(--grid-line-color) 1px, transparent 1px), linear-gradient(to bottom, var(--grid-line-color) 1px, transparent 1px);
+            background-size: 100% 100%, var(--grid-size) var(--grid-size), var(--grid-size) var(--grid-size);
+            mask-image: radial-gradient(circle at center, black 60%, transparent 100%);
+            -webkit-mask-image: radial-gradient(circle at center, black 60%, transparent 100%);
+            will-change: background-position;
+        }
+        .section-2 .shape-plane-top { position: absolute; top: -10vh; left: -5vw; width: 40vw; height: 40vw; background: linear-gradient(135deg, rgba(239, 197, 25, 0.03), transparent 60%); border-radius: 50%; filter: blur(80px); z-index: -1; transform: translateZ(0); }
+        .section-2 .shape-plane-bottom { position: absolute; bottom: 0; right: 15%; width: 20vw; height: 50vh; background: linear-gradient(0deg, rgba(255, 255, 255, 0.02), transparent); transform: skewX(-20deg) translateZ(0); border-left: 1px solid rgba(255, 255, 255, 0.05); z-index: -1; }
+        .section-2 .shape-line-h { position: absolute; top: 28%; left: 0; width: 100%; height: 1px; background: linear-gradient(90deg, transparent 5%, rgba(255, 255, 255, 0.08) 15%, transparent 60%); z-index: -1; }
+        .section-2 .shape-line-v { position: absolute; top: 0; left: clamp(80px, 8vw, 120px); width: 1px; height: 100%; background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.05), transparent); z-index: -1; }
+        .section-2 .deco-dot { position: absolute; width: 6px; height: 6px; background: var(--brand-yellow); border-radius: 50%; z-index: -1; box-shadow: 0 0 10px var(--brand-yellow); top: 28%; left: calc(clamp(80px, 8vw, 120px) - 3px); }
+        .section-2 .main-container { width: 100%; max-width: 1440px; height: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 6vw; position: relative; gap: 4vw; }
+        .section-2 .content-left { flex: 1; max-width: 600px; z-index: 2; display: flex; flex-direction: column; justify-content: center; }
+        .section-2 .tags-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+        .section-2 .tag-pill { font-size: clamp(12px, 1.2vw, 16px); font-weight: var(--fw-nav); color: rgba(255, 255, 255, 0.8); border: 1px solid rgba(255, 255, 255, 0.15); background: rgba(255, 255, 255, 0.03); border-radius: 100px; padding: 6px 20px; backdrop-filter: blur(4px); }
+        .section-2 .project-logo { width: clamp(70px, 6vw, 100px); height: auto; border-radius: 24px; margin-bottom: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
+        .section-2 .title-cn { font-size: clamp(56px, 6vw, 90px); font-weight: 800; line-height: 1.1; background: linear-gradient(135deg, #FFFFFF 30%, var(--brand-yellow) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 4px; text-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .section-2 .title-en-wrapper { font-family: "SF Pro Display", sans-serif; font-size: clamp(28px, 3.5vw, 48px); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; line-height: 1; display: flex; align-items: baseline; gap: 12px; margin-left: 6px; }
+        .section-2 .title-outline { color: transparent; -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.4); }
+        .section-2 .title-solid { color: var(--brand-yellow); }
+        .section-2 .subtitle { font-size: clamp(14px, 1.5vw, 18px); color: var(--text-secondary); margin-top: 16px; margin-bottom: clamp(32px, 5vh, 60px); letter-spacing: 2px; display: flex; gap: 16px; text-transform: uppercase; }
+        .section-2 .section-block { margin-bottom: clamp(32px, 5vh, 48px); border-left: 1px solid rgba(255,255,255,0.1); padding-left: 24px; }
+        .section-2 .section-block.active { border-left: 4px solid var(--brand-yellow); }
+        .section-2 .section-title { font-size: clamp(12px, 1vw, 14px); color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .section-2 .context-text { font-size: clamp(12px, 1.2vw, 14px); line-height: 1.8; color: #ccc; max-width: 480px; text-align: justify; }
+        .section-2 .highlight-text { color: white; font-weight: 500; border-bottom: 1px solid rgba(239, 197, 25, 0.5); }
+        .section-2 .impact-row { display: flex; gap: clamp(24px, 3vw, 40px); margin-top: 16px; }
+        .section-2 .stat-number { font-size: clamp(32px, 3.5vw, 44px); font-weight: 700; color: var(--brand-yellow); margin-bottom: 4px; font-family: "SF Pro Display", sans-serif; letter-spacing: -2px; background: linear-gradient(180deg, var(--brand-yellow) 20%, #B8860B 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .section-2 .stat-label { font-size: var(--fs-caption); color: var(--color-caption); text-transform: uppercase; letter-spacing: 1px; }
+        .section-2 .role-section { display: flex; align-items: center; gap: 16px; margin-top: 16px; }
+        .section-2 .role-label { font-size: clamp(12px, 1.2vw, 14px); font-weight: var(--fw-nav); color: #666; text-transform: uppercase; margin-right: 8px; }
+        .section-2 .role-tag { font-size: clamp(10px, 1vw, 11px); color: var(--color-caption); background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 4px 12px; border-radius: 4px; }
+        .section-2 .visual-right { flex: 1; height: 100%; display: flex; align-items: center; justify-content: center; perspective: 1200px; cursor: pointer; }
+        .section-2 .phone-scaler { transform: scale(var(--phone-scale)); transform-origin: center center; display: flex; transition: transform 0.2s ease-out; }
+        .section-2 .phone-mockup { width: 400px; height: 848px; background: #fff; border-radius: 64px; border: 12px solid #1a1a1a; box-shadow: 0 0 0 2px #333, -30px 40px 60px rgba(0,0,0,0.5), -10px 10px 20px rgba(0,0,0,0.3); position: relative; overflow: hidden; transform: rotateY(-15deg) rotateX(5deg); transition: transform 0.1s ease-out, box-shadow 0.3s ease; z-index: 10; will-change: transform; }
+        .section-2 .phone-mockup::after { content: ""; position: absolute; inset:0; background: linear-gradient(105deg, rgba(255,255,255,0) 20%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 80%); pointer-events: none; z-index: 30; }
+        .section-2 .dynamic-island { position: absolute; top: 26px; left: 50%; transform: translateX(-50%); width: 120px; height: 36px; background: black; border-radius: 20px; z-index: 100; }
+        .section-2 .login-container { width: 375px; height: 824px; position: relative; background: linear-gradient(to bottom, #fffdf0 0%, white 30%, white 100%); color: #1a1a1a; width: 100%; height: 100%; overflow: hidden; }
+        .section-2 .status-bar { position: absolute; top: 10px; left: -0.5px; width: 100%; height: 43px; display: flex; align-items: center; justify-content: space-between; padding: 0 19.231px; z-index: 50; }
+        .section-2 .status-time { font-family: 'PingFang SC', sans-serif; font-weight: 600; font-size: 15.385px; color: #0a0a0a; }
+        .section-2 .status-icon { width: 23.077px; height: 11.538px; }
+        .section-2 .welcome-section { position: absolute; top: 0; left: 0; width: 375px; height: 510.5px; }
+        .section-2 .welcome-hello { position: absolute; top: 111px; left: 44px; font-weight: 600; font-size: 16px; color: #1a1a1a; }
+        .section-2 .welcome-text { position: absolute; top: 130px; left: 44px; font-weight: 600; font-size: 16px; color: #1a1a1a; }
+        .section-2 .cat-image { position: absolute; top: 152px; left: 170px; width: 174px; height: 169px; overflow: hidden; }
+        .section-2 .cat-image img { position: absolute; width: 100%; height: 100%; object-fit: contain; left: 0; top: 0; }
+        .section-2 .form-section { position: absolute; top: 321px; left: 32px; width: 311px; display: flex; flex-direction: column; gap: 16px; }
+        .section-2 .input-container { background: #f7f7f8; height: 56px; border-radius: 20px; display: flex; align-items: center; padding: 1px 21px; gap: 12px; }
+        .section-2 .input-icon { width: 20px; height: 20px; flex-shrink: 0; }
+        .section-2 .input-divider { width: 1px; height: 20px; background: #e5e7eb; flex-shrink: 0; }
+        .section-2 .input-field { flex: 1; border: none; background: transparent; outline: none; font-size: 16px; width: 100%; }
+        .section-2 .input-field::placeholder { color: #d1d5dc; }
+        .section-2 .verification-row { display: flex; gap: 12px; }
+        .section-2 .get-code-btn { background: black; width: 110px; height: 56px; border-radius: 20px; box-shadow: 0px 8px 32px 0px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; color: white; font-weight: 600; font-size: 14px;}
+        .section-2 .bottom-section { position: absolute; top: 489px; left: 0; width: 375px; padding: 0 32px; display: flex; flex-direction: column; gap: 24px; }
+        .section-2 .login-btn { background: #efc519; height: 56px; border-radius: 20px; box-shadow: 0px 12px 24px 0px rgba(239,197,25,0.25); border: none; cursor: pointer; width: 100%; font-weight: 600; font-size: 20px;}
+        .section-2 .agreement-section { display: flex; align-items: center; justify-content: center; gap: 8px; height: 16.5px; }
+        .section-2 .checkbox { width: 16px; height: 16px; background: #31d26f; border: 1px solid #34c759; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .section-2 .checkbox svg { width: 10px; height: 10px; }
+        .section-2 .agreement-text { font-size: 11px; color: #99a1af; }
+        .section-2 .agreement-link { color: black; text-decoration: none; }
+        .section-2 .bottom-bar { position: absolute; top: 790px; left: 0; width: 100%; height: 34px; }
+        .section-2 .home-bar { width: 134px; height: 5px; background: black; border-radius: 100px; margin: 0 auto;}
+
+        /* ================= 3. AI 交互体验 ================= */
+        .section-3 { background-color: #FFFCF5; color: #1A1A1A; display: flex; flex-direction: column; justify-content: center;}
+        .section-3 .float-slow { animation: float3 8s ease-in-out infinite; transform: translateZ(0); will-change: transform; }
+        .section-3 .float-fast { animation: float3 5s ease-in-out infinite reverse; transform: translateZ(0); will-change: transform; }
+        @keyframes float3 { 0% { transform: translateY(0px) rotate(0deg) scale(1) translateZ(0); } 50% { transform: translateY(-30px) rotate(5deg) scale(1.05) translateZ(0); } 100% { transform: translateY(0px) rotate(0deg) scale(1) translateZ(0); } }
+        .section-3 .pulse-border { animation: pulse-ring3 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse-ring3 { 0% { box-shadow: 0 0 0 0 rgba(239, 197, 25, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(239, 197, 25, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 197, 25, 0); } }
+        .section-3 .typing-dot { animation: typing3 1.4s infinite ease-in-out both; }
+        .section-3 .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .section-3 .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing3 { 0%, 80%, 100% { transform: scale(0); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
+        .section-3 .fade-in-up-3 { animation: fadeInUp3 0.5s ease-out forwards; }
+        @keyframes fadeInUp3 { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .section-3 .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .section-3 .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .section-3 .custom-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
+
+        /* ================= 4. 视觉画廊 ================= */
+        .section-4 { background-color: #1A1A1A; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;}
+        .section-4 .gallery-container { display: flex; width: 110vw; height: 100vh; margin-left: -5vw; transform: skewX(-8deg); }
+        @media (max-width: 768px) { .section-4 .gallery-container { flex-direction: column; width: 100vw; margin-left: 0; transform: none; } }
+        .section-4 .panel { flex: 1; position: relative; overflow: hidden; cursor: pointer; margin-right: -2px; border: none; transition: flex 0.7s cubic-bezier(0.25, 1, 0.5, 1); will-change: flex; }
+        .section-4 .panel:last-child { margin-right: 0; }
+        .section-4 .panel img { filter: saturate(0.8) brightness(0.8); transition: filter 0.7s cubic-bezier(0.25, 1, 0.5, 1); transform: translateZ(0); }
+        .section-4 .panel:hover img { filter: saturate(1.05) brightness(1.05); }
+        .section-4 .gallery-container:hover .panel:not(:hover) img { filter: grayscale(90%) brightness(0.25); }
+        .section-4 .mix-blend-overlay { opacity: 0.03 !important; }
+        .section-4 .bg-gradient-to-t { opacity: 0.3 !important; }
+        .section-4 .panel:hover .bg-gradient-to-t { opacity: 0.95 !important; }
+        .section-4 .gallery-container:hover .panel { flex: 0.6; }
+        .section-4 .gallery-container .panel:hover { flex: 3; }
+        @media (max-width: 768px) { .section-4 .gallery-container:hover .panel { flex: 1; } .section-4 .gallery-container .panel:hover { flex: 3; } }
+        .section-4 .panel-inner { position: absolute; top: 0; left: 50%; width: 100vw; height: 100%; transform: translateX(-50%) skewX(8deg); }
+        @media (max-width: 768px) { .section-4 .panel-inner { transform: translateX(-50%); } }
+        .section-4 .bg-panel-1 { background-color: #EFC519; }
+        .section-4 .bg-panel-2 { background-color: #FFFCF5; }
+        .section-4 .bg-panel-3 { background-color: #FFC8C5; }
+        .section-4 .bg-panel-4 { background-color: #DDAD6B; }
+        .section-4 .bg-panel-5 { background-color: #1A1A1A; }
+
+        /* ================= 5. B端仪表盘 ================= */
+        .section-5 { background-color: #F8FAFC; color: #1F2937; display: flex; flex-direction: column; justify-content: center;}
+        .section-5 .glow-bg { position: absolute; border-radius: 50%; filter: blur(120px); z-index: 0; pointer-events: none; opacity: 0.15; animation: breathe5 8s infinite alternate ease-in-out; transform: translateZ(0); will-change: transform, opacity; }
+        @keyframes breathe5 { 0% { transform: scale(1) translate(0, 0) translateZ(0); opacity: 0.1; } 100% { transform: scale(1.1) translate(-20px, 20px) translateZ(0); opacity: 0.2; } }
+        .section-5 .fade-in-up-5 { animation: fadeInUp5 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeInUp5 { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .section-5 .skeleton { background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 50%, #f0f2f5 75%); background-size: 200% 100%; animation: shimmer5 1.5s infinite; }
+        @keyframes shimmer5 { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .section-5 .line-draw { stroke-dasharray: 1000; stroke-dashoffset: 1000; transition: stroke-dashoffset 1.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .section-5 .line-draw.active { stroke-dashoffset: 0; }
+        .section-5 .area-fade { opacity: 0; transition: opacity 1.2s ease-in-out 0.6s; }
+        .section-5 .area-fade.active { opacity: 1; }
+        .section-5 .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .section-5 .custom-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 6px; }
+
+        /* ================= 6. 含动画页 (Contact) ================= */
+        .section-6 { background-color: #FFFFFF; color: #1A1A1A; display: flex; align-items: center; justify-content: center; perspective: 1000px; }
+        .section-6 .bg-dots { position: absolute; inset: 0; background-image: radial-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px); background-size: 24px 24px; -webkit-mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 85%); mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 85%); z-index: 0; pointer-events: none; opacity: 0; transition: opacity 1.5s ease; will-change: transform; }
+        .section-6 .bg-lines { position: absolute; inset: 0; z-index: 0; pointer-events: none; will-change: transform; }
+        .section-6 .line-v, .section-6 .line-h { position: absolute; opacity: 0; background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.06), transparent); }
+        .section-6 .line-h { background: linear-gradient(to right, transparent, rgba(0,0,0,0.06), transparent); }
+        
+        /* 修改：水波纹固定在Viewport中，杜绝坐标错乱 */
+        .hit-ripple { position: fixed; width: 12px; height: 12px; background: rgba(239, 197, 25, 1); border-radius: 50%; transform: translate(-50%, -50%) scale(0.5); animation: rippleHit 0.6s ease-out forwards; pointer-events: none; z-index: 9999; }
+        @keyframes rippleHit { 
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; border: 0px solid #EFC519; } 
+            50% { background: rgba(239, 197, 25, 0.2); border: 2px solid #EFC519; opacity: 0.8; } 
+            100% { transform: translate(-50%, -50%) scale(5); opacity: 0; border: 1px solid #EFC519; background: transparent; } 
+        }
+        
+        @keyframes popInHit { 
+            0% { opacity: 0; transform: translateY(40px) scale(0.95); } 
+            100% { opacity: 1; transform: translateY(0) scale(1); } 
+        }
+
+        .section-6 .draw-v { animation: drawV6 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .section-6 .draw-h { animation: drawH6 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes drawV6 { 0% { top: 28%; bottom: 72%; left: 50%; opacity: 0; } 100% { top: 15%; bottom: 15%; left: 50%; opacity: 1; width: 1px; } }
+        @keyframes drawH6 { 0% { left: 55%; right: 45%; top: 50%; opacity: 0; } 100% { left: 10%; right: 10%; top: 50%; opacity: 1; height: 1px; } }
+        
+        .section-6 .bg-planes { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; opacity: 0; transition: opacity 2s ease; will-change: transform; }
+        .section-6 .plane-1 { position: absolute; top: 5%; left: 10%; width: 500px; height: 500px; background: radial-gradient(circle, rgba(239,197,25,0.12) 0%, rgba(255,255,255,0) 70%); }
+        .section-6 .plane-2 { position: absolute; bottom: 10%; right: 5%; width: 550px; height: 550px; background: radial-gradient(circle, rgba(0,0,0,0.03) 0%, rgba(255,255,255,0) 70%); }
+        .section-6 .delayed-fade { opacity: 0; transform: translateY(30px); }
+        .section-6 .glass-card { background: var(--tw-colors-brand-card); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(0, 0, 0, 0.05); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.03); transition: background 0.3s, border-color 0.3s, box-shadow 0.3s, transform 0.1s; transform-style: preserve-3d; will-change: transform; }
+        .section-6 .glass-card:hover { background: var(--tw-colors-brand-cardHover); border-color: rgba(239, 197, 25, 0.4); box-shadow: 0 25px 40px -10px rgba(0,0,0,0.08), 0 0 20px rgba(239, 197, 25, 0.15); }
+        .section-6 #toast { position: absolute; bottom: -50px; left: 50%; transform: translateX(-50%); background: #1A1A1A; color: #FFFFFF; padding: 12px 24px; border-radius: 50px; font-weight: bold; font-size: 14px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); opacity: 0; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 100; }
+        .section-6 #toast.show { bottom: 40px; opacity: 1; }
+        .section-6 .qr-popover { position: absolute; bottom: calc(100% + 15px); right: 0; background: #ffffff; padding: 10px; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05); opacity: 0; visibility: hidden; transform: translateY(10px) translateZ(20px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 50; }
+        .section-6 .wechat-group:hover .qr-popover { opacity: 1; visibility: visible; transform: translateY(0) translateZ(20px); }
+        .section-6 .qr-popover::after { content: ''; position: absolute; top: 100%; right: 24px; border-width: 8px; border-style: solid; border-color: #ffffff transparent transparent transparent; }
+
+        /* ================= 7. 右侧点状进度导航 ================= */
+        .dot-nav-container { position: fixed; right: 24px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 12px; z-index: 100; pointer-events: auto; }
+        .nav-dot { width: 8px; height: 8px; border-radius: 9999px; background-color: rgba(156, 163, 175, 0.4); transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1); cursor: pointer; border: none; padding: 0; outline: none; }
+        .nav-dot:hover { background-color: rgba(239, 197, 25, 0.8); transform: scale(1.2); }
+        .nav-dot.active { height: 28px; background-color: #EFC519; transform: scale(1); box-shadow: 0 0 10px rgba(239, 197, 25, 0.4); cursor: default; }
+        .nav-dot:nth-child(5):hover { background-color: rgba(22, 119, 255, 0.8) !important; }
+        .nav-dot:nth-child(5).active { background-color: #1677FF !important; box-shadow: 0 0 10px rgba(22, 119, 255, 0.4) !important; }
+        .dot-nav-container.dark-bg .nav-dot:not(.active) { background-color: rgba(255, 255, 255, 0.25); }
+        
+        @media (max-width: 768px) {
+            .dot-nav-container { right: 12px; transform: scale(0.8) translateY(-50%); transform-origin: right center; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 全局防抖滚动容器 -->
+    <div class="scroll-container">
+
+        <!-- ================= 第1页: 封面 ================= -->
+        <section class="section section-1" id="page-1">
+            <div class="page-container" id="scale-board">
+                <div class="blur-layer absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#EFC519] rounded-full opacity-30 pointer-events-none z-0 animate-fade-in delay-500" style="width: 57vw; height: 55vh; filter: blur(100px);"></div>
+                <div class="absolute inset-0 pointer-events-none z-0 interactive-layer" data-speed="60">
+                    <div class="blur-layer absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#FDE047] rounded-full opacity-50 animate-fade-in delay-700" style="width: 31vw; height: 27vh; filter: blur(70px);"></div>
+                </div>
+                <svg class="absolute inset-0 w-full h-full z-10 pointer-events-none animate-fade-in delay-700">
+                    <g opacity="0.1" stroke="#1A1A1A" stroke-width="1">
+                        <line x1="8.33%" y1="0" x2="8.33%" y2="100%" />
+                        <line x1="91.66%" y1="0" x2="91.66%" y2="100%" />
+                        <line x1="0" y1="14.81%" x2="100%" y2="14.81%" />
+                        <line x1="0" y1="85.18%" x2="100%" y2="85.18%" />
+                        <line x1="50%" y1="0" x2="50%" y2="14.81%" stroke-dasharray="4 4" />
+                        <line x1="50%" y1="85.18%" x2="50%" y2="100%" stroke-dasharray="4 4" />
+                    </g>
+                    <rect x="8.33%" y="14.81%" width="16.66%" height="70.37%" fill="#EFC519" opacity="0.03" />
+                </svg>
+                <div class="absolute z-10 pointer-events-none animate-fade-in delay-700" style="left: 16.66%; top: 70.37%; transform: translate(-50%, -50%);">
+                    <div class="absolute border border-[#1A1A1A] rounded-full opacity-15" style="width: 8.33vw; height: 8.33vw; transform: translate(-50%, -50%);"></div>
+                    <div class="absolute border border-[#1A1A1A] rounded-full opacity-5" style="width: 6.25vw; height: 6.25vw; transform: translate(-50%, -50%);"></div>
+                </div>
+                <div class="absolute z-10 pointer-events-none animate-fade-in delay-700 interactive-layer" data-speed="-25" style="left: 80.2%; top: 25.9%; width: 5.2vw; height: 13.8vh;">
+                    <div class="w-full h-full bg-[#EFC519] opacity-90"></div>
+                </div>
+                <div class="absolute z-10 pointer-events-none animate-fade-in delay-700 interactive-layer" data-speed="-45" style="left: 78.9%; top: 23.6%; width: 5.2vw; height: 13.8vh;">
+                    <div class="w-full h-full border-[1.5px] border-[#1A1A1A] opacity-30"></div>
+                </div>
+                <main class="absolute inset-0 w-full h-full flex flex-col items-center justify-center z-20 text-center select-none pointer-events-none">
+                    <div id="tilt-title" class="interactive-layer font-serif-elegant text-[#1A1A1A] flex flex-col items-center mt-2">
+                        <span class="text-[clamp(40px,6vw,100px)] tracking-[0.15em] leading-none mb-6 ml-[0.15em] animate-fade-up delay-100">
+                            UIUX DESIGN
+                        </span>
+                        <span class="text-[clamp(50px,8vw,130px)] font-medium tracking-[0.2em] leading-none ml-[0.2em] animate-fade-up delay-300">
+                            PORTFOLIO
+                        </span>
+                    </div>
+                </main>
+                <header class="absolute top-[7.4vh] left-[8.33%] right-[8.33%] flex justify-between items-center z-20 animate-fade-up delay-500">
+                    <div class="flex items-center gap-4">
+                        <div class="w-1.5 h-1.5 bg-[#EFC519] rounded-full"></div>
+                        <span class="text-[#1A1A1A] text-[clamp(12px,1.2vw,16px)] font-bold tracking-[0.2em]">LAN ZILING</span>
+                    </div>
+                    <span class="text-[#888888] text-[clamp(10px,1vw,14px)] font-medium tracking-[0.15em] uppercase hidden sm:block">Creative & Rational</span>
+                </header>
+                <footer class="absolute bottom-[14.81vh] left-[8.33%] right-[8.33%] flex items-center gap-4 md:gap-10 z-20 animate-fade-up delay-500">
+                    <span class="text-[#1A1A1A] text-[clamp(14px,1.5vw,20px)] font-bold tracking-[0.15em]">2025-2026</span>
+                    <div class="flex-1 h-[1px] bg-gradient-to-r from-[#1A1A1A]/20 via-[#1A1A1A]/10 to-transparent"></div>
+                    <span class="text-[#888888] text-[clamp(10px,1vw,14px)] font-medium tracking-[0.15em]">VOL. 01</span>
+                </footer>
+            </div>
+        </section>
+
+
+        <!-- ================= 第2页: 开言社 ================= -->
+        <section class="section section-2" id="page-2">
+            <div class="bg-grid"></div>
+            <div class="shape-plane-top"></div>
+            <div class="shape-plane-bottom"></div>
+            <div class="shape-line-h"></div>
+            <div class="shape-line-v"></div>
+            <div class="deco-dot dot-1"></div>
+
+            <div class="main-container">
+                <div class="content-left">
+                    <div class="tags-row">
+                        <span class="tag-pill">2025 Portfolio</span>
+                        <span class="tag-pill">UI/UX Case Study</span>
+                    </div>
+                    <img src="./image/brand-logo.jpg" class="project-logo" alt="开言社 Logo">
+                    <div class="title-group">
+                        <span class="title-cn">开言社</span>
+                        <div class="title-en-wrapper"><span class="title-outline">Open</span><span class="title-solid">Up</span></div>
+                    </div>
+                    <div class="subtitle">AI 场景化口语实战教练</div>
+                    <div class="section-block active">
+                        <div class="section-title">Context / 背景痛点</div>
+                        <div class="context-text">解决职场人“哑巴英语”与“难以坚持”的核心痛点。打破传统背词模式，通过 <span class="highlight-text">AI 语音识别</span> 与 <span class="highlight-text">全真职场模拟</span>，打造透明化、沉浸式的口语实战闭环。</div>
+                    </div>
+                    <div class="section-block">
+                        <div class="section-title">Impact / 关键战绩</div>
+                        <div class="impact-row">
+                            <div class="stat-item"><div class="stat-number">20%</div><div class="stat-label">次日留存提升</div></div>
+                            <div class="stat-item"><div class="stat-number">88%</div><div class="stat-label">核心需求覆盖</div></div>
+                            <div class="stat-item"><div class="stat-number">No.1</div><div class="stat-label">拟真场景体验</div></div>
+                        </div>
+                    </div>
+                    <div class="role-section">
+                        <span class="role-label">My Role</span>
+                        <div class="role-tag">Lead UI/UX</div>
+                        <div class="role-tag">Design System</div>
+                        <div class="role-tag">User Research</div>
+                    </div>
+                </div>
+
+                <div class="visual-right" id="visualArea">
+                    <div class="phone-scaler">
+                        <div class="phone-mockup" id="phoneMockup">
+                            <div class="dynamic-island"></div>
+                            <div class="login-container">
+                                <div class="status-bar">
+                                    <div class="status-time">9:41</div>
+                                    <svg class="status-icon" fill="none" viewBox="0 0 23.0769 11.5385"><path d="M1.15385 3.84615H0.576923C0.423763 3.84615 0.276778 3.90694 0.168678 4.01504C0.0605781 4.12314 0 4.27012 0 4.42308V7.11538C0 7.26834 0.0605781 7.41533 0.168678 7.52343C0.276778 7.63152 0.423763 7.69231 0.576923 7.69231H1.15385V3.84615ZM21.9231 2.30769V9.23077C21.9231 9.53669 21.8016 9.8301 21.5854 10.0462C21.3693 10.2624 21.0759 10.3846 20.7692 10.3846H18.6154C18.3094 10.3846 18.016 10.2624 17.7999 10.0462C17.5838 9.8301 17.4615 9.53669 17.4615 9.23077V2.30769C17.4615 2.00177 17.5838 1.70836 17.7999 1.49228C18.016 1.27619 18.3094 1.15385 18.6154 1.15385H20.7692C21.0759 1.15385 21.3693 1.27619 21.5854 1.49228C21.8016 1.70836 21.9231 2.00177 21.9231 2.30769ZM16.3077 0.576923V10.9615C16.3077 11.1145 16.2471 11.2615 16.139 11.3696C16.0309 11.4777 15.8839 11.5385 15.7308 11.5385H14.5769C14.4239 11.5385 14.2769 11.4777 14.1688 11.3696C14.0607 11.2615 14 11.1145 14 10.9615V0.576923C14 0.423763 14.0607 0.276778 14.1688 0.168678C14.2769 0.0605781 14.4239 0 14.5769 0H15.7308C15.8839 0 16.0309 0.0605781 16.139 0.168678C16.2471 0.276778 16.3077 0.423763 16.3077 0.576923ZM7.69231 4.42308V7.11538C7.69231 7.26834 7.63152 7.41533 7.52343 7.52343C7.41533 7.63152 7.26834 7.69231 7.11538 7.69231H3.26923C3.11627 7.69231 2.96929 7.63152 2.86119 7.52343C2.75309 7.41533 2.69231 7.26834 2.69231 7.11538V4.42308C2.69231 4.27012 2.75309 4.12314 2.86119 4.01504C2.96929 3.90694 3.11627 3.84615 3.26923 3.84615H7.11538C7.26834 3.84615 7.41533 3.90694 7.52343 4.01504C7.63152 4.12314 7.69231 4.27012 7.69231 4.42308ZM12.8462 1.73077V9.80769C12.8462 9.96065 12.7854 10.1076 12.6773 10.2157C12.5692 10.3238 12.4222 10.3846 12.2692 10.3846H11.1154C10.9624 10.3846 10.8154 10.3238 10.7073 10.2157C10.5992 10.1076 10.5385 9.96065 10.5385 9.80769V1.73077C10.5385 1.57781 10.5992 1.43082 10.7073 1.32272C10.8154 1.21462 10.9624 1.15385 11.1154 1.15385H12.2692C12.4222 1.15385 12.5692 1.21462 12.6773 1.32272C12.7854 1.43082 12.8462 1.57781 12.8462 1.73077Z" fill="#1A1A1A" /></svg>
+                                </div>
+                                <div class="welcome-section">
+                                    <p class="welcome-hello">Hello~</p>
+                                    <p class="welcome-text">欢迎来到开言社！</p>
+                                    <div class="cat-image"><img src="./image/ui-mascot.png" alt="Cute cat mascot"></div>
+                                </div>
+                                <div class="form-section">
+                                    <div class="input-container">
+                                        <svg class="input-icon" fill="none" viewBox="0 0 20 20"><path d="M18.3337 14.0999V16.5999C18.3349 16.8319 18.2867 17.0616 18.1923 17.2743C18.0979 17.487 17.9593 17.678 17.7847 17.8348C17.6101 17.9917 17.4035 18.1109 17.1783 18.1854C16.9531 18.2599 16.7144 18.2881 16.4754 18.2683C13.9282 17.988 11.4875 17.1117 9.32535 15.7083C7.31141 14.4288 5.60443 12.7218 4.32535 10.7083C2.91702 8.53426 2.04053 6.0799 1.76702 3.5249C1.74726 3.28649 1.77515 3.04839 1.8493 2.82363C1.92346 2.59887 2.04218 2.39266 2.19843 2.21822C2.35468 2.04378 2.54503 1.90515 2.75713 1.81057C2.96923 1.71599 3.19832 1.66756 3.43035 1.66823H5.93035C6.3267 1.66448 6.71125 1.80582 7.01238 2.06953C7.31351 2.33324 7.51088 2.70108 7.56702 3.09989C7.67168 3.89994 7.86934 4.68552 8.15535 5.44156C8.26565 5.73985 8.28759 6.06401 8.21836 6.37565C8.14914 6.68729 7.99182 6.97334 7.76702 7.19989L6.74202 8.22489C7.92795 10.3027 9.69759 12.0723 11.7754 13.2583L12.8004 12.2333C13.0269 12.0085 13.313 11.8511 13.6246 11.7819C13.9363 11.7127 14.2604 11.7346 14.5587 11.8449C15.3148 12.1309 16.1003 12.3286 16.9004 12.4333C17.3048 12.4899 17.6768 12.6912 17.9412 12.9977C18.2056 13.3043 18.3435 13.6952 18.3337 14.0999Z" stroke="#99A1AF" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                        <div class="input-divider"></div>
+                                        <input type="tel" class="input-field" placeholder="请输入手机号">
+                                    </div>
+                                    <div class="verification-row">
+                                        <div class="input-container verification-input">
+                                            <svg class="input-icon" fill="none" viewBox="0 0 20 20"><path d="M15.8337 9.16667H4.16699C3.24652 9.16667 2.50033 9.91286 2.50033 10.8333V16.6667C2.50033 17.5871 3.24652 18.3333 4.16699 18.3333H15.8337C16.7541 18.3333 17.5003 17.5871 17.5003 16.6667V10.8333C17.5003 9.91286 16.7541 9.16667 15.8337 9.16667Z" stroke="#99A1AF" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.83301 9.16667V5.83333C5.83301 4.72826 6.27199 3.66846 7.05339 2.88706C7.83479 2.10565 8.89459 1.66667 9.99967 1.66667C11.1048 1.66667 12.1646 2.10565 12.946 2.88706C13.7274 3.66846 14.1663 4.72826 14.1663 5.83333V9.16667" stroke="#99A1AF" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                            <div class="input-divider"></div>
+                                            <input type="text" class="input-field" placeholder="验证码">
+                                        </div>
+                                        <button class="get-code-btn">获取验证码</button>
+                                    </div>
+                                </div>
+                                <div class="bottom-section">
+                                    <button class="login-btn">注册/登录</button>
+                                    <div class="agreement-section">
+                                        <div class="checkbox"><svg fill="none" viewBox="0 0 10 10"><path d="M8.33333 2.5L3.75 7.08333L1.66667 5" stroke="white" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                                        <div class="agreement-text">已阅读并同意<a href="javascript:void(0)" class="agreement-link">用户协议</a>与<a href="javascript:void(0)" class="agreement-link">隐私政策</a></div>
+                                    </div>
+                                </div>
+                                <div class="bottom-bar"><div class="bottom-bar-indicator"><div class="home-bar"></div></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= 第3页: AI 交互体验 ================= -->
+        <section class="section section-3 antialiased selection:bg-brand-yellow selection:text-brand-black" id="page-3">
+            <div class="absolute top-[-5%] right-[-5%] w-[45vw] h-[45vw] bg-brand-yellow rounded-full rounded-tr-none opacity-20 blur-[100px] float-slow pointer-events-none"></div>
+            <div class="absolute bottom-[-10%] left-[-5%] w-[40vw] h-[40vw] bg-brand-accent rounded-full rounded-tl-none opacity-10 blur-[100px] float-fast pointer-events-none"></div>
+
+            <div class="flex-1 flex items-center justify-center w-full z-10 px-8">
+                <div class="flex items-center justify-center gap-12 lg:gap-20 transition-all duration-[800ms] ease-in-out">
+                    
+                    <div id="intro-panel-3" class="w-[480px] max-w-[480px] shrink-0 opacity-100 transition-all duration-[800ms] ease-[cubic-bezier(0.25,1,0.5,1)] overflow-hidden">
+                        <div class="w-[480px] flex flex-col justify-center fade-in-up-3">
+                            <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-brand-black text-brand-yellow rounded-full text-xs font-bold tracking-widest mb-6 w-max shadow-md">
+                                <div class="w-2 h-2 bg-brand-yellow rounded-full animate-pulse"></div> LIVE INTERACTION
+                            </div>
+                            <h1 class="text-5xl lg:text-6xl font-black leading-[1.15] mb-6 text-brand-black tracking-tight">全真场景化<br>口语实战训练</h1>
+                            <p class="text-gray-500 text-base font-medium leading-relaxed mb-12 flex items-center gap-2">
+                                请点击右侧手机界面底部的“模拟回复”按钮进行体验
+                                <i class="fa-solid fa-arrow-right-long text-brand-yellow text-lg animate-[pulse-x_1.5s_infinite]"></i> 
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="phone-panel-3" class="shrink-0 relative z-20 fade-in-up-3 transition-transform duration-[800ms]" style="animation-delay: 0.2s;">
+                        <div class="w-[340px] h-[680px] max-h-[85vh] bg-brand-gray rounded-[48px] p-2.5 shadow-2xl border border-gray-200/50 relative bg-white/50 backdrop-blur-xl">
+                            <div class="bg-brand-cream w-full h-full rounded-[38px] overflow-hidden flex flex-col relative border border-gray-100 shadow-inner">
+                                <div class="h-6 w-full flex justify-between items-center px-6 pt-2 text-[10px] font-medium text-gray-800 bg-white z-20 shrink-0">
+                                    <span>9:41</span><div class="flex gap-1.5 items-center"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full text-xs"></i></div>
+                                </div>
+                                <div class="bg-white px-5 pb-3 pt-2 border-b border-gray-100 flex items-center justify-between z-20 shadow-sm shrink-0">
+                                    <div class="flex items-center gap-3">
+                                        <div class="relative w-9 h-9">
+                                            <img src="./image/ui-avatar-coco.png" alt="CoCo" class="w-9 h-9 rounded-full border border-brand-yellow/20 shadow-sm object-cover bg-brand-yellow/10">
+                                            <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
+                                        </div>
+                                        <div>
+                                            <div class="text-[14px] font-bold text-brand-black leading-tight">可可 (CoCo)</div>
+                                            <div class="text-[10px] text-green-500 mt-0.5 flex items-center gap-1"><div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div> AI 实时陪伴中</div>
+                                        </div>
+                                    </div>
+                                    <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 cursor-pointer transition-colors"><i class="fa-solid fa-ellipsis-vertical"></i></div>
+                                </div>
+                                <div id="chat-box-3" class="flex-1 p-4 overflow-y-auto custom-scroll flex flex-col gap-4 bg-brand-gray/30 relative">
+                                    <div class="mt-2"></div>
+                                    <div class="flex gap-3 text-brand-black">
+                                        <img src="./image/ui-avatar-coco.png" alt="CoCo" class="w-8 h-8 rounded-full flex-shrink-0 shadow-sm mt-1 border border-white object-cover bg-brand-yellow/10">
+                                        <div class="bg-white p-3.5 rounded-2xl rounded-tl-none shadow-sm text-[13px] max-w-[85%] border border-gray-100 leading-relaxed">
+                                            Hello! Welcome to the airport check-in counter. How can I help you today?
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-4 bg-white border-t border-gray-100 z-20 pb-6 shrink-0">
+                                    <button id="demo-btn-3" class="w-full bg-brand-yellow text-brand-black font-bold py-3.5 rounded-[18px] hover:bg-[#dcb515] transition-all duration-300 shadow-glow pulse-border flex items-center justify-center gap-2 transform active:scale-95">
+                                        <i class="fa-solid fa-microphone"></i> 点击模拟回复
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="portfolio-panel-3" class="w-0 max-w-0 shrink-0 opacity-0 transition-all duration-[800ms] ease-[cubic-bezier(0.25,1,0.5,1)] overflow-hidden">
+                        <div class="w-[750px] flex flex-col justify-center h-full max-h-[85vh]">
+                            <div class="overflow-y-auto custom-scroll pr-6 pb-4">
+                                <h2 class="text-4xl font-black mb-3 text-brand-black">体验完成！</h2>
+                                <p class="text-gray-500 text-base mb-8">这是开言社项目全链路体验的冰山一角。您还可以继续探索：</p>
+                                <div class="grid grid-cols-2 gap-5 w-full">
+                                    <a href="./project-research.html" class="block bg-white p-5 rounded-3xl shadow-sm border border-gray-100 hover:shadow-card-hover hover:-translate-y-1.5 transition-all cursor-pointer group text-left outline-none decoration-transparent">
+                                        <div class="w-10 h-10 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform text-lg"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+                                        <h3 class="font-bold text-base mb-1.5 text-brand-black">项目前期调研</h3><p class="text-xs text-gray-400 leading-relaxed">基于定量问卷与定性访谈，深度挖掘用户在“哑巴英语”背后的真实痛点与核心学习诉求。</p>
+                                    </a>
+                                    <a href="./core-design.html" class="block bg-white p-5 rounded-3xl shadow-sm border border-gray-100 hover:shadow-card-hover hover:-translate-y-1.5 transition-all cursor-pointer group text-left outline-none decoration-transparent">
+                                        <div class="w-10 h-10 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform text-lg"><i class="fa-solid fa-pen-ruler"></i></div>
+                                        <h3 class="font-bold text-base mb-1.5 text-brand-black">核心界面设计与方案推演</h3><p class="text-xs text-gray-400 leading-relaxed">聚焦口语实战闭环，通过交互原型与场景推演，打造沉浸式且无压力的实战对话体验。</p>
+                                    </a>
+                                    <a href="./ui-design-system.html" class="block bg-white p-5 rounded-3xl shadow-sm border border-gray-100 hover:shadow-card-hover hover:-translate-y-1.5 transition-all cursor-pointer group text-left outline-none decoration-transparent">
+                                        <div class="w-10 h-10 bg-green-50 text-green-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform text-lg"><i class="fa-solid fa-swatchbook"></i></div>
+                                        <h3 class="font-bold text-base mb-1.5 text-brand-black">UI设计规范</h3><p class="text-xs text-gray-400 leading-relaxed">建立高保真组件库与IP“可可”表情规范，高对比度色彩体系完全符合 WCAG 2.1 AA 标准。</p>
+                                    </a>
+                                    <a href="./project-review.html" class="block bg-white p-5 rounded-3xl shadow-sm border border-gray-100 hover:shadow-card-hover hover:-translate-y-1.5 transition-all cursor-pointer group text-left outline-none decoration-transparent">
+                                        <div class="w-10 h-10 bg-purple-50 text-purple-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform text-lg"><i class="fa-solid fa-chart-line"></i></div>
+                                        <h3 class="font-bold text-base mb-1.5 text-brand-black">项目复盘总结</h3><p class="text-xs text-gray-400 leading-relaxed">建立优化前后的直观参照系，用真实数据量化体验升级带来的商业价值与次日留存提升。</p>
+                                    </a>
+                                </div>
+                                <div class="mt-8 flex gap-4">
+                                    <button class="bg-brand-black text-brand-yellow px-8 py-3.5 rounded-full text-sm font-bold shadow-lg hover:bg-gray-800 transition-colors flex items-center gap-2">查看完整作品集 <i class="fa-solid fa-arrow-right"></i></button>
+                                    <button id="reset-demo-btn-3" class="px-6 py-3.5 rounded-full text-sm font-bold text-gray-500 hover:text-brand-black hover:bg-white shadow-sm border border-gray-200 transition-all flex items-center gap-2"><i class="fa-solid fa-rotate-left"></i> 重新体验交互</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= 第4页: 视觉画廊 ================= -->
+        <section class="section section-4" id="page-4">
+            <div class="gallery-container">
+                <a href="logo.html" class="panel group block text-left">
+                    <div class="panel-inner">
+                        <div class="absolute inset-0 bg-panel-5 flex items-center justify-center transition-transform duration-1000 ease-out group-hover:scale-105">
+                            <img src="./image/gallery-logo-bg.jpg" alt="" class="absolute inset-0 w-full h-full object-cover" />
+                            <div class="absolute inset-0 opacity-10 mix-blend-overlay" style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1px); background-size: 20px 20px;"></div>
+                        </div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-90"></div>
+                        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl px-8 pb-16 md:pb-24 text-white flex flex-col items-center text-center opacity-0 pointer-events-none transition-all duration-500 group-hover:opacity-100 group-hover:pointer-events-auto">
+                            <div class="overflow-hidden"><h2 class="text-3xl md:text-5xl font-bold mb-2 transform translate-y-full whitespace-nowrap transition-transform duration-500 delay-100 group-hover:translate-y-0">品牌标志</h2></div>
+                            <div class="overflow-hidden mb-6"><p class="text-[#EFC519] tracking-[0.3em] text-sm md:text-base font-semibold transform translate-y-full transition-transform duration-500 delay-150 group-hover:translate-y-0">沟通·对话与链接</p></div>
+                            <div class="overflow-hidden max-h-0 opacity-0 transition-all duration-500 delay-200 group-hover:max-h-40 group-hover:opacity-100"><p class="text-gray-300 text-sm md:text-base leading-relaxed max-w-md mx-auto transform translate-y-4 transition-transform duration-500 delay-200 group-hover:translate-y-0">由交叠的对话气泡构成。黑色气泡代表用户，长出猫耳的黄色气泡代表AI教练，二者如锁扣般紧密连接，象征对话与陪伴。</p></div>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="ip-design.html" class="panel group block text-left">
+                    <div class="panel-inner">
+                        <div class="absolute inset-0 bg-panel-3 flex items-center justify-center transition-transform duration-1000 ease-out group-hover:scale-105">
+                            <img src="./image/gallery-3d-coco.jpg" alt="" class="absolute inset-0 w-full h-full object-cover" />
+                            <div class="absolute inset-0 opacity-10 mix-blend-overlay" style="background-image: radial-gradient(circle, #000 1px, transparent 1px); background-size: 20px 20px;"></div>
+                        </div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-90"></div>
+                        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl px-8 pb-16 md:pb-24 text-white flex flex-col items-center text-center opacity-0 pointer-events-none transition-all duration-500 group-hover:opacity-100 group-hover:pointer-events-auto">
+                            <div class="overflow-hidden"><h2 class="text-3xl md:text-5xl font-bold mb-2 transform translate-y-full whitespace-nowrap transition-transform duration-500 delay-100 group-hover:translate-y-0">3D视觉升级</h2></div>
+                            <div class="overflow-hidden mb-6"><p class="text-[#EFC519] tracking-[0.3em] text-sm md:text-base font-semibold transform translate-y-full transition-transform duration-500 delay-150 group-hover:translate-y-0">连接·全方位互动</p></div>
+                            <div class="overflow-hidden max-h-0 opacity-0 transition-all duration-500 delay-200 group-hover:max-h-40 group-hover:opacity-100"><p class="text-gray-300 text-sm md:text-base leading-relaxed max-w-md mx-auto transform translate-y-4 transition-transform duration-500 delay-200 group-hover:translate-y-0">将平面IP立体化，赋予更丰富的情感化表情库，在不同反馈节点提供差异化陪伴。</p></div>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="illustration.html" class="panel group block text-left">
+                    <div class="panel-inner">
+                        <div class="absolute inset-0 bg-panel-1 flex items-center justify-center transition-transform duration-1000 ease-out group-hover:scale-105">
+                            <img src="./image/gallery-illustration.jpg" alt="" class="absolute inset-0 w-full h-full object-cover" />
+                            <div class="absolute inset-0 opacity-10 mix-blend-overlay" style="background-image: radial-gradient(circle, #000 1px, transparent 1px); background-size: 20px 20px;"></div>
+                        </div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-90"></div>
+                        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl px-8 pb-16 md:pb-24 text-white flex flex-col items-center text-center opacity-0 pointer-events-none transition-all duration-500 group-hover:opacity-100 group-hover:pointer-events-auto">
+                            <div class="overflow-hidden"><h2 class="text-3xl md:text-5xl font-bold mb-2 transform translate-y-full whitespace-nowrap transition-transform duration-500 delay-100 group-hover:translate-y-0">IP形象插画</h2></div>
+                            <div class="overflow-hidden mb-6"><p class="text-[#EFC519] tracking-[0.3em] text-sm md:text-base font-semibold transform translate-y-full transition-transform duration-500 delay-150 group-hover:translate-y-0">陪伴·降低开口焦虑</p></div>
+                            <div class="overflow-hidden max-h-0 opacity-0 transition-all duration-500 delay-200 group-hover:max-h-40 group-hover:opacity-100"><p class="text-gray-300 text-sm md:text-base leading-relaxed max-w-md mx-auto transform translate-y-4 transition-transform duration-500 delay-200 group-hover:translate-y-0">运用2.5D插画与手绘涂鸦风格，模拟马克笔触感，以“不完美”的视觉语言营造轻松的学习氛围。</p></div>
+                        </div>
+                    </div>
+                </a>
+
+            </div>
+        </section>
+
+
+        <!-- ================= 第5页: B端仪表盘 ================= -->
+        <section class="section section-5 antialiased selection:bg-brand-blue selection:text-white relative" id="page-5">
+            <div class="glow-bg bg-brand-blue w-[40vw] h-[40vw] top-[-10%] right-[-5%]"></div>
+            <div class="glow-bg bg-purple-500 w-[35vw] h-[35vw] bottom-[-10%] left-[-10%]" style="animation-delay: -4s;"></div>
+
+            <div class="flex-1 flex items-center justify-center w-full z-10 px-8">
+                <div class="flex items-center justify-center gap-10 lg:gap-16 transition-all duration-[900ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]">
+                    
+                    <div id="intro-panel-5" class="w-[420px] max-w-[420px] shrink-0 opacity-100 transition-all duration-[800ms] ease-[cubic-bezier(0.25,1,0.5,1)] overflow-hidden">
+                        <div class="w-[420px] flex flex-col justify-center fade-in-up-5">
+                            <div class="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-brand-blue border border-blue-100 rounded-md text-xs font-bold tracking-widest mb-6 w-max">
+                                <div class="w-1.5 h-1.5 bg-brand-blue rounded-full animate-pulse"></div> V3.0.0 全量发布
+                            </div>
+                            <h1 class="text-4xl lg:text-5xl font-black leading-tight mb-5 text-gray-900 tracking-tight">B端电商业务<br>中台重构设计</h1>
+                            <p class="text-gray-500 text-sm leading-relaxed mb-6">基于业务核心痛点剖析，构建涵盖个人小店至大型企业的全渠道电商系统。解决旧版ERP数据割裂与操作冗余问题，支撑 50,000+ 企业级商家账户的数据实时互通。</p>
+                            <p class="text-brand-blue text-sm font-bold leading-relaxed flex items-center gap-2 mt-2">
+                                请点击右侧看板的「运行数据分析」进行体验
+                                <i class="fa-solid fa-arrow-right-long text-lg animate-[pulse-x_1.5s_infinite]"></i> 
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="dashboard-panel" class="shrink-0 relative z-20 fade-in-up-5 transition-transform duration-[900ms]" style="animation-delay: 0.1s;">
+                        <div class="w-[800px] h-[540px] bg-white rounded-2xl shadow-panel border border-gray-200/60 overflow-hidden flex flex-col relative">
+                            <div class="h-12 bg-gray-50 border-b border-gray-200 flex items-center justify-between px-4 shrink-0">
+                                <div class="flex gap-2"><div class="w-3 h-3 rounded-full bg-red-400"></div><div class="w-3 h-3 rounded-full bg-amber-400"></div><div class="w-3 h-3 rounded-full bg-green-400"></div></div>
+                                <div class="bg-white border border-gray-200 rounded text-[10px] text-gray-400 px-3 py-1 font-mono w-64 text-center truncate">dashboard.admin-system.com/overview</div>
+                                <div class="w-16"></div> 
+                            </div>
+                            <div class="flex-1 flex overflow-hidden">
+                                <div class="w-16 bg-white border-r border-gray-200 flex flex-col items-center py-6 gap-6 shrink-0 z-10 shadow-[2px_0_8px_rgba(0,0,0,0.02)]">
+                                    <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-brand-blue mb-4 cursor-pointer transition-colors shadow-sm border border-blue-100"><i class="fa-solid fa-chart-line"></i></div>
+                                    <div class="w-8 h-8 rounded-lg text-gray-400 flex items-center justify-center hover:bg-gray-50 hover:text-brand-blue cursor-pointer transition-colors"><i class="fa-solid fa-layer-group"></i></div>
+                                    <div class="w-8 h-8 rounded-lg text-gray-400 flex items-center justify-center hover:bg-gray-50 hover:text-brand-blue cursor-pointer transition-colors"><i class="fa-solid fa-file-invoice"></i></div>
+                                    <div class="w-8 h-8 rounded-lg text-gray-400 flex items-center justify-center hover:bg-gray-50 hover:text-brand-blue cursor-pointer transition-colors"><i class="fa-solid fa-gear"></i></div>
+                                </div>
+                                <div class="flex-1 bg-brand-bg flex flex-col relative">
+                                    <div class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0">
+                                        <h2 class="font-bold text-gray-800">业务核心数据大盘</h2>
+                                        <button id="demo-btn-5" class="bg-brand-blue text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-blue-600 transition-colors shadow-sm flex items-center gap-2 transform active:scale-95">
+                                            <i class="fa-solid fa-play text-xs"></i> 运行数据分析
+                                        </button>
+                                    </div>
+                                    <div class="flex-1 p-6 overflow-y-auto custom-scroll flex flex-col gap-6 relative">
+                                        <div id="overlay-5" class="absolute inset-0 bg-white/40 backdrop-blur-[2px] z-10 flex items-center justify-center transition-opacity duration-500"></div>
+                                        <div class="grid grid-cols-4 gap-4">
+                                            <div class="bg-white p-4 rounded-xl shadow-card border border-gray-100 flex flex-col justify-between hover:shadow-hover transition-all cursor-pointer">
+                                                <div class="text-xs text-gray-500 font-medium flex justify-between items-center">任务流转耗时 <i class="fa-solid fa-clock text-blue-200"></i></div>
+                                                <div class="mt-2 flex items-baseline gap-1"><span class="text-2xl font-bold text-gray-800 counter" data-target="-45" data-suffix="%">0%</span></div>
+                                            </div>
+                                            <div class="bg-white p-4 rounded-xl shadow-card border border-gray-100 flex flex-col justify-between hover:shadow-hover transition-all cursor-pointer">
+                                                <div class="text-xs text-gray-500 font-medium flex justify-between items-center">数据同步率 <i class="fa-solid fa-rotate text-green-200"></i></div>
+                                                <div class="mt-2 flex items-baseline gap-1"><span class="text-2xl font-bold text-gray-800 counter" data-target="99.9" data-suffix="%">0.0%</span></div>
+                                            </div>
+                                            <div class="bg-white p-4 rounded-xl shadow-card border border-gray-100 flex flex-col justify-between hover:shadow-hover transition-all cursor-pointer">
+                                                <div class="text-xs text-gray-500 font-medium flex justify-between items-center">商家满意度 <i class="fa-solid fa-face-smile text-orange-200"></i></div>
+                                                <div class="mt-2 flex items-baseline gap-1"><span class="text-2xl font-bold text-gray-800 counter" data-target="4.6" data-suffix="/5">0.0/5</span><span class="text-[10px] text-green-500 bg-green-50 px-1 rounded ml-1">+0.8</span></div>
+                                            </div>
+                                            <div class="bg-white p-4 rounded-xl shadow-card border border-gray-100 flex flex-col justify-between hover:shadow-hover transition-all cursor-pointer">
+                                                <div class="text-xs text-gray-500 font-medium flex justify-between items-center">大额询单转化 <i class="fa-solid fa-filter text-purple-200"></i></div>
+                                                <div class="mt-2 flex items-baseline gap-1"><span class="text-2xl font-bold text-gray-800 counter" data-target="12.8" data-suffix="%">0.0%</span><span class="text-[10px] text-green-500 bg-green-50 px-1 rounded ml-1">+4.2%</span></div>
+                                            </div>
+                                        </div>
+                                        <div class="bg-white p-5 rounded-xl shadow-card border border-gray-100 flex-1 flex flex-col relative overflow-hidden">
+                                            <div class="flex justify-between items-center mb-4 z-10 relative">
+                                                <div class="text-sm font-bold text-gray-800 flex items-center gap-2"><i class="fa-solid fa-chart-line text-brand-blue text-lg"></i> 销售趋势</div>
+                                                <div class="text-xs text-gray-400 flex gap-4"><span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-brand-blue"></div>2025年 GMV</span></div>
+                                            </div>
+                                            <div id="chart-skeleton-5" class="flex-1 w-full skeleton rounded-lg"></div>
+                                            <div id="real-chart-5" class="flex-1 w-full hidden relative flex flex-col">
+                                                <div class="relative flex-1 w-full">
+                                                    <svg class="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 400 150" preserveAspectRatio="none">
+                                                        <defs><linearGradient id="blueGradient" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#1677FF" stop-opacity="0.25"/><stop offset="100%" stop-color="#1677FF" stop-opacity="0.0"/></linearGradient></defs>
+                                                        <path class="area-fade fill-[url(#blueGradient)]" d="M 0 130 C 25 130, 25 124.1, 50 124.1 C 100 124.1, 100 108.9, 150 108.9 C 200 108.9, 200 115.5, 250 115.5 C 300 115.5, 300 35, 350 35 C 375 35, 400 35, 400 35 L 400 150 L 0 150 Z"></path>
+                                                        <path class="line-draw fill-none stroke-brand-blue stroke-[3]" d="M 0 130 C 25 130, 25 124.1, 50 124.1 C 100 124.1, 100 108.9, 150 108.9 C 200 108.9, 200 115.5, 250 115.5 C 300 115.5, 300 35, 350 35 C 375 35, 400 35, 400 35"></path>
+                                                    </svg>
+                                                    <div class="absolute inset-0 flex flex-col justify-between py-4 pointer-events-none opacity-60">
+                                                        <div class="border-t border-dashed border-gray-200"></div><div class="border-t border-dashed border-gray-200"></div><div class="border-t border-dashed border-gray-200"></div><div class="border-t border-dashed border-gray-200"></div>
+                                                    </div>
+                                                    <div class="absolute inset-0 flex z-10">
+                                                        <div class="flex-1 relative group cursor-crosshair border-r border-dashed border-gray-200/70 hover:bg-brand-blue/[0.03] transition-colors duration-300">
+                                                            <div class="absolute top-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-0.5 transition-all bg-white border border-gray-200 text-gray-700 text-[11px] font-bold px-2.5 py-1 rounded shadow-md z-20 whitespace-nowrap pointer-events-none">¥ 28.5w</div>
+                                                            <div class="absolute top-7 bottom-0 left-1/2 w-px border-l border-dashed border-brand-blue opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none"></div>
+                                                            <div class="absolute left-1/2 w-2.5 h-2.5 bg-white border-[2px] border-brand-blue rounded-full shadow-sm area-fade group-hover:w-3.5 group-hover:h-3.5 group-hover:border-[3px] group-hover:shadow-md transition-all pointer-events-none" style="top: 82.73%; transform: translate(-50%, -50%);"></div>
+                                                        </div>
+                                                        <div class="flex-1 relative group cursor-crosshair border-r border-dashed border-gray-200/70 hover:bg-brand-blue/[0.03] transition-colors duration-300">
+                                                            <div class="absolute top-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-0.5 transition-all bg-white border border-gray-200 text-gray-700 text-[11px] font-bold px-2.5 py-1 rounded shadow-md z-20 whitespace-nowrap pointer-events-none">¥ 45.2w</div>
+                                                            <div class="absolute top-7 bottom-0 left-1/2 w-px border-l border-dashed border-brand-blue opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none"></div>
+                                                            <div class="absolute left-1/2 w-2.5 h-2.5 bg-white border-[2px] border-brand-blue rounded-full shadow-sm area-fade group-hover:w-3.5 group-hover:h-3.5 group-hover:border-[3px] group-hover:shadow-md transition-all pointer-events-none" style="top: 72.6%; transform: translate(-50%, -50%); transition-delay: 0.1s"></div>
+                                                        </div>
+                                                        <div class="flex-1 relative group cursor-crosshair border-r border-dashed border-gray-200/70 hover:bg-brand-blue/[0.03] transition-colors duration-300">
+                                                            <div class="absolute top-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-0.5 transition-all bg-white border border-gray-200 text-gray-700 text-[11px] font-bold px-2.5 py-1 rounded shadow-md z-20 whitespace-nowrap pointer-events-none">¥ 38.0w</div>
+                                                            <div class="absolute top-7 bottom-0 left-1/2 w-px border-l border-dashed border-brand-blue opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none"></div>
+                                                            <div class="absolute left-1/2 w-2.5 h-2.5 bg-white border-[2px] border-brand-blue rounded-full shadow-sm area-fade group-hover:w-3.5 group-hover:h-3.5 group-hover:border-[3px] group-hover:shadow-md transition-all pointer-events-none" style="top: 77.0%; transform: translate(-50%, -50%); transition-delay: 0.2s"></div>
+                                                        </div>
+                                                        <div class="flex-1 relative group cursor-crosshair hover:bg-brand-blue/[0.03] transition-colors duration-300">
+                                                            <div class="absolute top-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-0.5 transition-all bg-white border border-gray-200 text-gray-700 text-[11px] font-bold px-2.5 py-1 rounded shadow-md z-20 whitespace-nowrap pointer-events-none">¥ 126.5w</div>
+                                                            <div class="absolute top-7 bottom-0 left-1/2 w-px border-l border-dashed border-brand-blue opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none"></div>
+                                                            <div class="absolute left-1/2 w-2.5 h-2.5 bg-white border-[2px] border-brand-blue rounded-full shadow-sm area-fade group-hover:w-3.5 group-hover:h-3.5 group-hover:border-[3px] group-hover:shadow-md transition-all pointer-events-none" style="top: 23.33%; transform: translate(-50%, -50%); transition-delay: 0.3s"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="h-7 w-full flex text-[10px] font-bold text-gray-500 border-t border-gray-200 mt-2 relative z-10 pt-1">
+                                                    <div class="flex-1 flex items-start justify-center hover:text-brand-blue transition-colors cursor-default">Q1</div>
+                                                    <div class="flex-1 flex items-start justify-center hover:text-brand-blue transition-colors cursor-default">Q2</div>
+                                                    <div class="flex-1 flex items-start justify-center hover:text-brand-blue transition-colors cursor-default">Q3</div>
+                                                    <div class="flex-1 flex items-start justify-center hover:text-brand-blue transition-colors cursor-default">Q4</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="portfolio-panel-5" class="w-0 max-w-0 shrink-0 opacity-0 transition-all duration-[900ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] overflow-hidden">
+                        <div class="w-[500px] flex flex-col justify-center h-full max-h-[85vh]">
+                            <div class="overflow-y-auto custom-scroll pr-4 pb-2">
+                                <div class="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-600 border border-green-100 rounded-md text-xs font-bold mb-4 w-max"><i class="fa-solid fa-check-circle"></i> 分析报告已生成</div>
+                                <h2 class="text-3xl font-black mb-3 text-gray-900">设计交付与价值验证</h2>
+                                <p class="text-gray-500 text-sm mb-6 leading-relaxed">建立从“需求剖析”到“上线验证”的标准化工作流，用真实数据量化设计带来的商业价值。</p>
+                                
+                                <div class="grid grid-cols-2 gap-4 w-full">
+                                    <a href="./b-project-background.html#page-5-expanded" class="block bg-white p-4 rounded-xl shadow-card border border-gray-100 hover:shadow-hover hover:-translate-y-1 transition-all cursor-pointer group text-left outline-none decoration-transparent">
+                                        <div class="w-10 h-10 bg-blue-50 text-brand-blue rounded-lg flex items-center justify-center mb-3 group-hover:bg-brand-blue group-hover:text-white transition-colors"><i class="fa-solid fa-bullseye text-lg"></i></div>
+                                        <h3 class="font-bold text-gray-800 text-sm mb-1">项目背景</h3>
+                                        <p class="text-xs text-gray-500 leading-relaxed line-clamp-2">深入剖析B端电商痛点，明确业务重构方向与核心诉求。</p>
+                                    </a>
+                                    <a href="./b-core-process.html#page-5-expanded" class="block bg-white p-4 rounded-xl shadow-card border border-gray-100 hover:shadow-hover hover:-translate-y-1 transition-all cursor-pointer group text-left outline-none decoration-transparent">
+                                        <div class="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-lg flex items-center justify-center mb-3 group-hover:bg-indigo-500 group-hover:text-white transition-colors"><i class="fa-solid fa-code-branch text-lg"></i></div>
+                                        <h3 class="font-bold text-gray-800 text-sm mb-1">核心业务优化流程</h3>
+                                        <p class="text-xs text-gray-500 leading-relaxed line-clamp-2">重塑商品管理与对账闭环，打通数据孤岛消除操作冗余。</p>
+                                    </a>
+                                    <a href="./b-components.html#page-5-expanded" class="block bg-white p-4 rounded-xl shadow-card border border-gray-100 hover:shadow-hover hover:-translate-y-1 transition-all cursor-pointer group text-left outline-none decoration-transparent">
+                                        <div class="w-10 h-10 bg-teal-50 text-teal-500 rounded-lg flex items-center justify-center mb-3 group-hover:bg-teal-500 group-hover:text-white transition-colors"><i class="fa-solid fa-layer-group text-lg"></i></div>
+                                        <h3 class="font-bold text-gray-800 text-sm mb-1">组件规范</h3>
+                                        <p class="text-xs text-gray-500 leading-relaxed line-clamp-2">建立全局一致的底层 Theme Token 及高频录入组件库。</p>
+                                    </a>
+                                    <a href="./b-summary.html#page-5-expanded" class="block bg-white p-4 rounded-xl shadow-card border border-gray-100 hover:shadow-hover hover:-translate-y-1 transition-all cursor-pointer group text-left outline-none decoration-transparent">
+                                        <div class="w-10 h-10 bg-purple-50 text-purple-500 rounded-lg flex items-center justify-center mb-3 group-hover:bg-purple-500 group-hover:text-white transition-colors"><i class="fa-solid fa-chart-pie text-lg"></i></div>
+                                        <h3 class="font-bold text-gray-800 text-sm mb-1">总结</h3>
+                                        <p class="text-xs text-gray-500 leading-relaxed line-clamp-2">复盘全量上线数据，验证体验升级带来的真实商业价值。</p>
+                                    </a>
+                                </div>
+
+                                <div class="mt-6 flex gap-4">
+                                    <button class="bg-brand-blue text-white px-6 py-3 rounded-md text-sm font-bold shadow-md hover:bg-blue-600 transition-colors flex items-center gap-2">查看 B端完整作品集 <i class="fa-solid fa-arrow-right"></i></button>
+                                    <button id="reset-demo-btn-5" class="px-5 py-3 rounded-md text-sm font-bold text-gray-500 hover:text-gray-800 bg-white shadow-sm border border-gray-200 transition-all flex items-center gap-2"><i class="fa-solid fa-rotate-left"></i> 重置演示</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= 第6页: 含动画页 (Contact) ================= -->
+        <section class="section section-6 antialiased selection:bg-brand-yellow selection:text-brand-black" id="page-6">
+            <div class="bg-dots parallax" data-speed="1.5" id="bg-dots"></div>
+            <div class="bg-planes parallax" data-speed="-2.5" id="bg-planes"><div class="plane-1"></div><div class="plane-2"></div></div>
+            <div class="bg-lines parallax" data-speed="0.8">
+                <div class="line-v" id="line-v"></div>
+                <div class="line-h" id="line-h"></div>
+            </div>
+
+            <div class="absolute top-10 left-10 md:left-16 z-20 flex items-center gap-3 delayed-fade">
+                <div class="w-8 h-8 rounded-full bg-brand-black flex items-center justify-center text-white font-black text-sm shadow-md">W.</div>
+                <span class="text-sm font-bold tracking-widest text-gray-400 uppercase">Portfolio 2026</span>
+            </div>
+
+            <div class="w-full max-w-[1280px] px-8 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-20 lg:gap-32 z-10 relative">
+                <div class="flex-1 max-w-[600px] relative z-20">
+                    <div class="w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden border-4 border-white shadow-xl mb-10 bg-gray-50 relative z-10 delayed-fade">
+                        <img src="./image/contact-profile.png" alt="Designer Portrait" class="w-full h-full object-cover">
+                    </div>
+                    <div class="relative z-50">
+                        <h1 id="main-title" class="text-5xl md:text-6xl font-black leading-tight mb-6 tracking-wider text-brand-black origin-center opacity-0 w-max relative">
+                            期待与您的<br>
+                            <span class="text-brand-black relative inline-block tracking-widest mt-2">
+                                深度交流
+                                <svg class="absolute w-full h-3 -bottom-1 left-0 text-brand-yellow opacity-60 -z-10" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M0 10 Q 50 20 100 10" fill="none" stroke="currentColor" stroke-width="6"/></svg>
+                            </span>
+                            <!-- 核心修复：全屏幕只有一个点。它原生呆在文字内部，跟随文字一起运动 -->
+                            <span id="the-yellow-dot" class="absolute right-[-24px] bottom-3 w-4 h-4 bg-brand-yellow rounded-full z-[100]"></span>
+                        </h1>
+                        <div class="delayed-fade">
+                            <h2 class="text-xl text-gray-600 font-bold mb-8 flex items-center gap-3 relative z-10">UI/UX 设计师 <span class="w-1.5 h-1.5 rounded-full bg-brand-yellow"></span> 产品体验架构师</h2>
+                            <p class="text-gray-500 text-lg leading-[1.8] mb-12 font-medium relative z-10">
+                                拥有<strong class="text-brand-black">动画设计背景</strong>，使我对动效反馈与交互微细节有着更敏锐的直觉。目前专注于 B端复杂业务系统与 C端创新场景的体验重构，深信设计不仅是视觉表达，更是解决商业痛点、驱动产品增长的核心力量。<br><br>期待加入您的团队，共同创造极致的产品体验。
+                            </p>
+                            <!-- 移除了原本在本地容易被拦截的 download 属性，改为 target="_blank" 新标签页打开，路径改为最简单的同级目录读取 -->
+                            <a href="./resume.pdf" target="_blank" rel="noopener noreferrer" class="inline-flex w-max group bg-brand-black text-white px-8 py-5 md:py-6 rounded-full font-bold shadow-xl hover:bg-brand-yellow hover:text-brand-black hover:shadow-brand-yellow/30 transition-all duration-300 items-center gap-3 hover:-translate-y-1 relative z-10 text-lg decoration-transparent outline-none">
+                                <i class="fa-solid fa-file-pdf group-hover:animate-bounce"></i> 预览 / 下载 PDF 简历
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-full md:w-[450px] lg:w-[480px] flex flex-col gap-6 relative z-10">
+                    <div class="text-sm font-bold tracking-widest text-gray-400 uppercase mb-1 relative w-max delayed-fade ml-4">
+                        <!-- Contact Me 左侧的目标槽位 -->
+                        <div id="dot-destination" class="absolute top-1/2 -translate-y-1/2 -left-4 w-2 h-2 shrink-0 rounded-full bg-brand-yellow opacity-0"></div>
+                        Contact Me
+                    </div>
+                    <div class="glass-card rounded-2xl p-6 flex items-center justify-between cursor-pointer group interactive-card delayed-fade" onclick="window.copyToClipboard('645894326@qq.com')">
+                        <div class="flex items-center gap-5 translate-z-[10px]">
+                            <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-brand-yellow group-hover:text-brand-black transition-colors duration-300"><i class="fa-solid fa-envelope text-lg"></i></div>
+                            <div><div class="text-xs text-gray-400 mb-1.5 font-medium">电子邮箱 Email</div><div class="font-bold text-[19px] text-brand-black group-hover:text-brand-yellow transition-colors duration-300">645894326@qq.com</div></div>
+                        </div>
+                        <div class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 group-hover:border-brand-yellow group-hover:text-brand-yellow transition-all duration-300 opacity-0 group-hover:opacity-100 bg-white translate-z-[15px]"><i class="fa-regular fa-copy text-xs"></i></div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-6 flex items-center justify-between cursor-pointer group interactive-card delayed-fade" onclick="window.copyToClipboard('18770875003')">
+                        <div class="flex items-center gap-5 translate-z-[10px]">
+                            <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-brand-yellow group-hover:text-brand-black transition-colors duration-300"><i class="fa-solid fa-phone text-lg"></i></div>
+                            <div><div class="text-xs text-gray-400 mb-1.5 font-medium">联系电话 Phone</div><div class="font-bold text-[19px] text-brand-black group-hover:text-brand-yellow transition-colors duration-300">18770875003</div></div>
+                        </div>
+                        <div class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 group-hover:border-brand-yellow group-hover:text-brand-yellow transition-all duration-300 opacity-0 group-hover:opacity-100 bg-white translate-z-[15px]"><i class="fa-regular fa-copy text-xs"></i></div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-6 flex items-center justify-between relative wechat-group interactive-card delayed-fade" onclick="window.copyToClipboard('Amamiya_Natsune')">
+                        <div class="flex items-center gap-5 translate-z-[10px]">
+                            <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-[#07C160] group-hover:text-white transition-colors duration-300"><i class="fa-brands fa-weixin text-xl"></i></div>
+                            <div><div class="text-xs text-gray-400 mb-1.5 font-medium">微信 WeChat</div><div class="font-bold text-[19px] text-brand-black group-hover:text-brand-yellow transition-colors duration-300">Amamiya_Natsune</div></div>
+                        </div>
+                        <div class="text-xs text-gray-400 font-medium flex items-center gap-2 bg-gray-50 px-2 py-1 rounded translate-z-[15px] border border-gray-100 group-hover:border-brand-yellow group-hover:text-brand-yellow transition-colors">悬浮扫码 / 复制 <i class="fa-solid fa-qrcode text-gray-500 group-hover:text-brand-yellow transition-colors"></i></div>
+                        <div class="qr-popover flex flex-col items-center">
+                            <div class="w-32 h-32 bg-white rounded-lg mb-2 flex items-center justify-center border border-gray-100 shadow-inner overflow-hidden"><img src="./image/contact-wechat-qr.png" alt="WeChat QR" class="w-28 h-28 object-contain"></div>
+                            <span class="text-xs text-gray-500 font-bold tracking-wider">扫一扫添加好友</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="absolute bottom-8 w-full text-center text-xs text-gray-400 font-bold tracking-widest uppercase delayed-fade">© 2026 DESIGNED WITH PASSION & LOGIC.</div>
+            <div id="toast"><i class="fa-solid fa-circle-check mr-2 text-brand-yellow"></i> 已成功复制到剪贴板！</div>
+        </section>
+
+    </div>
+
+    <!-- 右侧全局点状进度导航 -->
+    <div class="dot-nav-container" id="dot-nav">
+        <button class="nav-dot active" data-index="0" title="封面"></button>
+        <button class="nav-dot" data-index="1" title="开言社项目"></button>
+        <button class="nav-dot" data-index="2" title="AI交互体验"></button>
+        <button class="nav-dot" data-index="3" title="视觉画廊"></button>
+        <button class="nav-dot" data-index="4" title="B端中台"></button>
+        <button class="nav-dot" data-index="5" title="联系我"></button>
+    </div>
+
+    <!-- 全局高性能事件控制器 -->
+    <script>
+        // 1. 利用 IntersectionObserver 进行全局视口节流
+        let activeSection = 1;
+        
+        const navDots = document.querySelectorAll('.nav-dot');
+        const dotNavContainer = document.getElementById('dot-nav');
+        
+        function updateNavDots(index) {
+            navDots.forEach((dot, i) => {
+                if (i === index - 1) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+
+            if (index === 2 || index === 4) {
+                dotNavContainer.classList.add('dark-bg');
+            } else {
+                dotNavContainer.classList.remove('dark-bg');
+            }
+
+            if (index === 5) {
+                dotNavContainer.classList.add('theme-blue');
+            } else {
+                dotNavContainer.classList.remove('theme-blue');
+            }
+        }
+
+        navDots.forEach((dot) => {
+            dot.addEventListener('click', (e) => {
+                const targetIndex = parseInt(e.target.getAttribute('data-index'));
+                const scrollContainer = document.querySelector('.scroll-container');
+                scrollContainer.scrollTo({
+                    top: targetIndex * window.innerHeight,
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    activeSection = parseInt(entry.target.id.split('-')[1]);
+                    
+                    updateNavDots(activeSection);
+                    
+                    if (activeSection === 6 && !entry.target.dataset.animated) {
+                        playSection6Animation();
+                        entry.target.dataset.animated = 'true';
+                    }
+                }
+            });
+        }, { threshold: 0.5 }); 
+
+        document.querySelectorAll('.section').forEach(sec => observer.observe(sec));
+
+        // 1.5 强制单页防抖滚动
+        const scrollContainer = document.querySelector('.scroll-container');
+        let isWheelAnimating = false;
+
+        scrollContainer.addEventListener('wheel', (e) => {
+            e.preventDefault(); 
+            if (isWheelAnimating) return;
+            
+            const direction = Math.sign(e.deltaY);
+            if (direction === 0) return;
+
+            isWheelAnimating = true;
+            
+            const currentIndex = Math.round(scrollContainer.scrollTop / window.innerHeight);
+            const targetIndex = Math.max(0, Math.min(currentIndex + direction, document.querySelectorAll('.section').length - 1));
+
+            scrollContainer.scrollTo({
+                top: targetIndex * window.innerHeight,
+                behavior: 'smooth'
+            });
+
+            setTimeout(() => {
+                isWheelAnimating = false;
+            }, 800); 
+        }, { passive: false });
+
+        // 2. 利用 requestAnimationFrame 进行鼠标事件的高性能全局防抖
+        let ticking = false;
+        let mouseX = 0;
+        let mouseY = 0;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    handleMouseParallax(mouseX, mouseY);
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        });
+
+        // 3. 将所有页面的鼠标互动统一交由中央控制器管理
+        function handleMouseParallax(clientX, clientY) {
+            const xNorm = (clientX / window.innerWidth - 0.5) * 2;
+            const yNorm = (clientY / window.innerHeight - 0.5) * 2;
+            
+            if (activeSection === 1) {
+                const s1 = document.querySelector('.section-1');
+                s1.querySelectorAll('.interactive-layer').forEach(layer => {
+                    const speed = layer.getAttribute('data-speed');
+                    if (speed) { layer.style.transform = `translate(${xNorm * speed}px, ${yNorm * speed}px)`; }
+                });
+                const title = document.getElementById('tilt-title');
+                if (title) title.style.transform = `perspective(1500px) rotateX(${-yNorm * 4}deg) rotateY(${xNorm * 4}deg) translateZ(20px)`;
+            } 
+            else if (activeSection === 2) {
+                const bgGrid = document.querySelector('.section-2 .bg-grid'); 
+                if (bgGrid) {
+                    bgGrid.style.setProperty('--mouse-x', `${clientX}px`);
+                    bgGrid.style.setProperty('--mouse-y', `${clientY}px`);
+                }
+                const visualArea = document.getElementById('visualArea');
+                const phone = document.getElementById('phoneMockup');
+                if (visualArea && phone) {
+                    const rect = visualArea.getBoundingClientRect();
+                    if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
+                        const localX = clientX - rect.left; 
+                        const localY = clientY - rect.top;  
+                        const centerX = rect.width / 2; 
+                        const centerY = rect.height / 2;
+                        const rotateY = ((localX - centerX) / centerX) * 10; 
+                        const rotateX = ((centerY - localY) / centerY) * 10; 
+                        phone.style.transform = `rotateY(${rotateY - 15}deg) rotateX(${rotateX + 5}deg)`;
+                    } else {
+                        phone.style.transform = `rotateY(-15deg) rotateX(5deg)`;
+                    }
+                }
+            }
+            else if (activeSection === 6) {
+                const s6 = document.querySelector('.section-6');
+                const px = (clientX - window.innerWidth / 2) / 100;
+                const py = (clientY - window.innerHeight / 2) / 100;
+                s6.querySelectorAll('.parallax').forEach(layer => {
+                    const speed = layer.getAttribute('data-speed');
+                    layer.style.transform = `translate(${px * speed}px, ${py * speed}px)`;
+                });
+            }
+        }
+        
+        document.addEventListener('mouseleave', () => {
+            if (activeSection === 1) {
+                const s1 = document.querySelector('.section-1');
+                s1.querySelectorAll('.interactive-layer').forEach(layer => {
+                    if (layer.getAttribute('data-speed')) layer.style.transform = `translate(0px, 0px)`;
+                });
+                const title = document.getElementById('tilt-title');
+                if (title) title.style.transform = `perspective(1500px) rotateX(0deg) rotateY(0deg) translateZ(0px)`;
+            }
+        });
+
+
+        // ================= 第6页 (含动画) 动画与业务逻辑 =================
+        {
+            function playSection6Animation() {
+                const s6 = document.querySelector('.section-6');
+                const title = document.getElementById('main-title');
+                const bgDots = document.getElementById('bg-dots');
+                const bgPlanes = document.getElementById('bg-planes');
+                const lineV = document.getElementById('line-v');
+                const lineH = document.getElementById('line-h');
+                const dot = document.getElementById('the-yellow-dot'); // 我们唯一且真实的小黄点
+                const dest = document.getElementById('dot-destination');
+                const delayedElements = document.querySelectorAll('.section-6 .delayed-fade');
+                
+                // --- 1. 初始化重置状态 ---
+                delayedElements.forEach(el => { el.style.animation = 'none'; el.style.opacity = '0'; });
+                dest.style.opacity = '0';
+                lineV.classList.remove('draw-v');
+                lineH.classList.remove('draw-h');
+                bgDots.style.opacity = '0';
+                bgPlanes.style.opacity = '0';
+
+                // 如果点之前飞出去了，把它重新放回标题文字里
+                if (dot.parentElement !== title) {
+                    title.appendChild(dot);
+                }
+                // 清理内联样式，恢复原生附着状态
+                dot.style = '';
+                dot.className = "absolute right-[-24px] bottom-3 w-4 h-4 bg-brand-yellow rounded-full z-[100]";
+
+                // 将标题强制复位到正常状态，以便计算它在屏幕中心的精确坐标
+                title.style.transition = 'none';
+                title.style.transform = 'translate(0px, 0px) scale(1)';
+                title.style.opacity = '1';
+                void title.offsetWidth; // 触发重绘
+
+                const sectionRect = s6.getBoundingClientRect();
+                const originalTitleRect = title.getBoundingClientRect();
+                const titleCenterX = (originalTitleRect.left - sectionRect.left) + originalTitleRect.width / 2;
+                const titleCenterY = (originalTitleRect.top - sectionRect.top) + originalTitleRect.height / 2;
+
+                const startX = (window.innerWidth / 2) - titleCenterX;
+                const targetY = (window.innerHeight / 2) - titleCenterY;
+                const dropStartY = targetY - 120; // 从上方 120px 处落下
+
+                // 将标题移动到屏幕中央上方准备下坠
+                title.style.transform = `translate(${startX}px, ${dropStartY}px) scale(1.4)`;
+                title.style.opacity = '0';
+
+                setTimeout(() => {
+                    // 阶段一：小黄点跟随着标题一起下坠 (因为小黄点原生就在 DOM 里，这步完美同步)
+                    title.style.transition = 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                    title.style.transform = `translate(${startX}px, ${targetY}px) scale(1.4)`;
+                    title.style.opacity = '1';
+
+                    setTimeout(() => {
+                        // 阶段二：受力回弹向上 (跳跃一次)
+                        title.style.transform = `translate(${startX}px, ${targetY - 20}px) scale(1.45)`;
+                        bgDots.style.opacity = '1'; 
+                        bgPlanes.style.opacity = '1';
+                        lineV.classList.add('draw-v'); 
+                        lineH.classList.add('draw-h');
+                        
+                        setTimeout(() => {
+                            // 阶段三：回弹落下。此时大标题将完全停止运动。
+                            title.style.transform = `translate(${startX}px, ${targetY}px) scale(1.4)`;
+
+                            setTimeout(() => {
+                                // --- 阶段四：物理剥离与独立飞行 ---
+                                // 此时文字已经彻底静止。我们精确抓取它在屏幕上的绝对位置
+                                const dotRect = dot.getBoundingClientRect();
+
+                                // 精确计算 Contact Me 目标槽位坐标 (剔除父级 opacity 容器偏移影响)
+                                const destParentFade = dest.closest('.delayed-fade');
+                                const oldTransform = destParentFade.style.transform;
+                                destParentFade.style.transform = 'translateY(0)';
+                                const destRect = dest.getBoundingClientRect();
+                                destParentFade.style.transform = oldTransform;
+
+                                // 将点从 <h1> 中拔出，放到 <body> 最外层，从而完全免疫其他容器的 transform 影响
+                                document.body.appendChild(dot);
+                                dot.style.position = 'fixed'; // 固定在浏览器视口绝对坐标系
+                                dot.style.left = `${dotRect.left}px`;
+                                dot.style.top = `${dotRect.top}px`;
+                                dot.style.width = `${dotRect.width}px`;
+                                dot.style.height = `${dotRect.height}px`;
+                                dot.style.margin = '0';
+                                dot.style.transform = 'none';
+                                dot.style.transition = 'none';
+
+                                // 强制浏览器重绘，记录当前静止坐标
+                                void dot.offsetWidth;
+
+                                // 标题飞回左边正常位置
+                                title.style.transition = 'all 0.8s cubic-bezier(0.25, 1, 0.5, 1)';
+                                title.style.transform = `translate(0px, 0px) scale(1)`;
+
+                                // 实体点独立飞往目标并缩小为 8px
+                                dot.style.transition = 'left 0.6s cubic-bezier(0.5, 0, 0.2, 1), top 0.6s cubic-bezier(0.5, 0, 0.2, 1), width 0.6s ease, height 0.6s ease';
+                                dot.style.left = `${destRect.left}px`;
+                                dot.style.top = `${destRect.top}px`;
+                                dot.style.width = `${destRect.width}px`;
+                                dot.style.height = `${destRect.height}px`;
+
+                                setTimeout(() => {
+                                    // 阶段五：完美落位！
+                                    dot.style.opacity = '0';  // 隐藏飞行的点
+                                    dest.style.opacity = '1'; // 亮起目标槽位的点 (视觉无缝交接)
+
+                                    // 物理水波纹激荡 (水波纹同样建立在绝对固定坐标系，确保100%命中槽位)
+                                    const ripple = document.createElement('div');
+                                    ripple.className = 'hit-ripple';
+                                    ripple.style.left = `${destRect.left + destRect.width / 2}px`;
+                                    ripple.style.top = `${destRect.top + destRect.height / 2}px`;
+                                    document.body.appendChild(ripple);
+                                    setTimeout(() => ripple.remove(), 600);
+
+                                    // 激荡出其余所有联系方式卡片
+                                    delayedElements.forEach((el, idx) => { 
+                                        el.style.animation = `popInHit 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards ${idx * 0.05}s`; 
+                                    });
+
+                                }, 600); // 飞行动画时长 0.6s
+                            }, 200); // 等待大标题完全落稳静止
+                        }, 150); // 跳跃向上时长
+                    }, 600); // 初始下坠时长
+                }, 50);
+            }
+
+            document.querySelectorAll('.interactive-card').forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+                    const centerX = rect.width / 2; const centerY = rect.height / 2;
+                    const rotateX = ((y - centerY) / centerY) * -4; const rotateY = ((x - centerX) / centerX) * 4;
+                    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+                });
+                card.addEventListener('mouseleave', () => { card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`; });
+            });
+
+            window.copyToClipboard = function(text) {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed"; textArea.style.top = "-9999px";
+                document.body.appendChild(textArea); textArea.select();
+                try { document.execCommand('copy'); window.showToast(); } catch (err) { console.error('复制失败', err); }
+                document.body.removeChild(textArea);
+            }
+            window.showToast = function() {
+                const toast = document.getElementById('toast');
+                toast.classList.add('show');
+                setTimeout(() => { toast.classList.remove('show'); }, 2500);
+            }
+        }
+    </script>
+</body>
+</html>
