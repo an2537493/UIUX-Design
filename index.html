@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Tailwind 统一配置 -->
+    <!-- Tailwind 统一配置 (合并了所有页面的品牌色和设计标记) -->
     <script>
         tailwind.config = {
             theme: {
@@ -47,12 +47,12 @@
     </script>
 
     <style>
-        /* ================= 0. 全局物理滚动容器 ================= */
+        /* ================= 0. 全局物理滚动容器 (Scroll Snap) ================= */
         html, body {
             margin: 0; padding: 0;
             width: 100vw; height: 100vh;
-            overflow: hidden;
-            background-color: #1A1A1A;
+            overflow: hidden; /* 防止原生外层滚动条 */
+            background-color: #1A1A1A; /* 底部防白边 */
             font-family: "Noto Sans SC", -apple-system, sans-serif;
         }
 
@@ -61,8 +61,10 @@
             overflow-y: scroll;
             scroll-snap-type: y mandatory;
             scroll-behavior: smooth;
+            /* 隐藏滚动条 */
             scrollbar-width: none;
             -ms-overflow-style: none;
+            /* 提升滚动性能 */
             overscroll-behavior-y: none;
         }
         .scroll-container::-webkit-scrollbar { display: none; }
@@ -74,12 +76,14 @@
             position: relative;
             overflow: hidden;
             flex-shrink: 0;
-            transform: translateZ(0);
+            transform: translateZ(0); /* 开启GPU加速，防止滚动时重绘卡顿 */
         }
 
+        /* 选中文本颜色 */
         ::selection { background-color: #EFC519; color: #1A1A1A; }
 
-        /* ================= 1. 封面页 ================= */
+
+        /* ================= 1. 封面页 (Cover) ================= */
         .section-1 {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
             background-color: #FDFCF8;
@@ -96,9 +100,11 @@
         .section-1 .delay-700 { animation-delay: 700ms; }
         @keyframes coverFadeUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes coverFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* 强制GPU加速光晕层防卡顿 */
         .section-1 .blur-layer { transform: translateZ(0); will-change: transform, opacity; }
 
-        /* ================= 2. 开言社 ================= */
+
+        /* ================= 2. 02页 (Product Design) ================= */
         :root {
             --brand-yellow: #EFC519; --brand-black: #1A1A1A; --brand-cream: #FFFCF5; --brand-brown: #723E0F;
             --text-primary: #FFFFFF; --text-secondary: #999999; --bg-dark: #0f0f0f;
@@ -118,7 +124,7 @@
             background-size: 100% 100%, var(--grid-size) var(--grid-size), var(--grid-size) var(--grid-size);
             mask-image: radial-gradient(circle at center, black 60%, transparent 100%);
             -webkit-mask-image: radial-gradient(circle at center, black 60%, transparent 100%);
-            will-change: background-position;
+            will-change: background-position; /* 优化背景重绘 */
         }
         .section-2 .shape-plane-top { position: absolute; top: -10vh; left: -5vw; width: 40vw; height: 40vw; background: linear-gradient(135deg, rgba(239, 197, 25, 0.03), transparent 60%); border-radius: 50%; filter: blur(80px); z-index: -1; transform: translateZ(0); }
         .section-2 .shape-plane-bottom { position: absolute; bottom: 0; right: 15%; width: 20vw; height: 50vh; background: linear-gradient(0deg, rgba(255, 255, 255, 0.02), transparent); transform: skewX(-20deg) translateZ(0); border-left: 1px solid rgba(255, 255, 255, 0.05); z-index: -1; }
@@ -152,6 +158,7 @@
         .section-2 .phone-mockup::after { content: ""; position: absolute; inset:0; background: linear-gradient(105deg, rgba(255,255,255,0) 20%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 80%); pointer-events: none; z-index: 30; }
         .section-2 .dynamic-island { position: absolute; top: 26px; left: 50%; transform: translateX(-50%); width: 120px; height: 36px; background: black; border-radius: 20px; z-index: 100; }
         .section-2 .login-container { width: 375px; height: 824px; position: relative; background: linear-gradient(to bottom, #fffdf0 0%, white 30%, white 100%); color: #1a1a1a; width: 100%; height: 100%; overflow: hidden; }
+        /* 登录页内部零散元素 */
         .section-2 .status-bar { position: absolute; top: 10px; left: -0.5px; width: 100%; height: 43px; display: flex; align-items: center; justify-content: space-between; padding: 0 19.231px; z-index: 50; }
         .section-2 .status-time { font-family: 'PingFang SC', sans-serif; font-weight: 600; font-size: 15.385px; color: #0a0a0a; }
         .section-2 .status-icon { width: 23.077px; height: 11.538px; }
@@ -178,7 +185,8 @@
         .section-2 .bottom-bar { position: absolute; top: 790px; left: 0; width: 100%; height: 34px; }
         .section-2 .home-bar { width: 134px; height: 5px; background: black; border-radius: 100px; margin: 0 auto;}
 
-        /* ================= 3. AI 交互体验 ================= */
+
+        /* ================= 3. 03页 (AI Interaction) ================= */
         .section-3 { background-color: #FFFCF5; color: #1A1A1A; display: flex; flex-direction: column; justify-content: center;}
         .section-3 .float-slow { animation: float3 8s ease-in-out infinite; transform: translateZ(0); will-change: transform; }
         .section-3 .float-fast { animation: float3 5s ease-in-out infinite reverse; transform: translateZ(0); will-change: transform; }
@@ -195,7 +203,8 @@
         .section-3 .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .section-3 .custom-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
 
-        /* ================= 4. 视觉画廊 ================= */
+
+        /* ================= 4. 04页 (Gallery) ================= */
         .section-4 { background-color: #1A1A1A; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;}
         .section-4 .gallery-container { display: flex; width: 110vw; height: 100vh; margin-left: -5vw; transform: skewX(-8deg); }
         @media (max-width: 768px) { .section-4 .gallery-container { flex-direction: column; width: 100vw; margin-left: 0; transform: none; } }
@@ -218,7 +227,8 @@
         .section-4 .bg-panel-4 { background-color: #DDAD6B; }
         .section-4 .bg-panel-5 { background-color: #1A1A1A; }
 
-        /* ================= 5. B端仪表盘 ================= */
+
+        /* ================= 5. 05页 (B-End Dashboard) ================= */
         .section-5 { background-color: #F8FAFC; color: #1F2937; display: flex; flex-direction: column; justify-content: center;}
         .section-5 .glow-bg { position: absolute; border-radius: 50%; filter: blur(120px); z-index: 0; pointer-events: none; opacity: 0.15; animation: breathe5 8s infinite alternate ease-in-out; transform: translateZ(0); will-change: transform, opacity; }
         @keyframes breathe5 { 0% { transform: scale(1) translate(0, 0) translateZ(0); opacity: 0.1; } 100% { transform: scale(1.1) translate(-20px, 20px) translateZ(0); opacity: 0.2; } }
@@ -233,6 +243,7 @@
         .section-5 .custom-scroll::-webkit-scrollbar { width: 6px; }
         .section-5 .custom-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 6px; }
 
+
         /* ================= 6. 含动画页 (Contact) ================= */
         .section-6 { background-color: #FFFFFF; color: #1A1A1A; display: flex; align-items: center; justify-content: center; perspective: 1000px; }
         .section-6 .bg-dots { position: absolute; inset: 0; background-image: radial-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px); background-size: 24px 24px; -webkit-mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 85%); mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 85%); z-index: 0; pointer-events: none; opacity: 0; transition: opacity 1.5s ease; will-change: transform; }
@@ -240,14 +251,17 @@
         .section-6 .line-v, .section-6 .line-h { position: absolute; opacity: 0; background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.06), transparent); }
         .section-6 .line-h { background: linear-gradient(to right, transparent, rgba(0,0,0,0.06), transparent); }
         
-        /* 修改：水波纹固定在Viewport中，杜绝坐标错乱 */
-        .hit-ripple { position: fixed; width: 12px; height: 12px; background: rgba(239, 197, 25, 1); border-radius: 50%; transform: translate(-50%, -50%) scale(0.5); animation: rippleHit 0.6s ease-out forwards; pointer-events: none; z-index: 9999; }
+        /* 修改点大小以完全匹配真实节点大小 (8px) 确保替换时无缝 */
+        .section-6 .line-cross { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; background-color: transparent; transform: translate(-50%, -50%) scale(0); border-radius: 50%; z-index: 100; opacity: 0; pointer-events: none; }
+        
+        .section-6 .hit-ripple { position: absolute; width: 12px; height: 12px; background: rgba(239, 197, 25, 1); border-radius: 50%; transform: translate(-50%, -50%) scale(0.5); animation: rippleHit 0.6s ease-out forwards; pointer-events: none; z-index: 100; }
         @keyframes rippleHit { 
             0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; border: 0px solid #EFC519; } 
             50% { background: rgba(239, 197, 25, 0.2); border: 2px solid #EFC519; opacity: 0.8; } 
             100% { transform: translate(-50%, -50%) scale(5); opacity: 0; border: 1px solid #EFC519; background: transparent; } 
         }
         
+        /* 受到击中影响的弹性弹出动画 */
         @keyframes popInHit { 
             0% { opacity: 0; transform: translateY(40px) scale(0.95); } 
             100% { opacity: 1; transform: translateY(0) scale(1); } 
@@ -270,13 +284,19 @@
         .section-6 .wechat-group:hover .qr-popover { opacity: 1; visibility: visible; transform: translateY(0) translateZ(20px); }
         .section-6 .qr-popover::after { content: ''; position: absolute; top: 100%; right: 24px; border-width: 8px; border-style: solid; border-color: #ffffff transparent transparent transparent; }
 
-        /* ================= 7. 右侧点状进度导航 ================= */
+        /* ================= 7. 右侧点状进度导航规范化处理 ================= */
         .dot-nav-container { position: fixed; right: 24px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 12px; z-index: 100; pointer-events: auto; }
+        
+        /* 默认规范：所有点基底统一为灰色，hover 和 active 时才展现颜色 */
         .nav-dot { width: 8px; height: 8px; border-radius: 9999px; background-color: rgba(156, 163, 175, 0.4); transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1); cursor: pointer; border: none; padding: 0; outline: none; }
         .nav-dot:hover { background-color: rgba(239, 197, 25, 0.8); transform: scale(1.2); }
         .nav-dot.active { height: 28px; background-color: #EFC519; transform: scale(1); box-shadow: 0 0 10px rgba(239, 197, 25, 0.4); cursor: default; }
+        
+        /* 针对第5页专属的"蓝基因"指示点：默认依旧是灰色，只有交互时才显现蓝色 */
         .nav-dot:nth-child(5):hover { background-color: rgba(22, 119, 255, 0.8) !important; }
         .nav-dot:nth-child(5).active { background-color: #1677FF !important; box-shadow: 0 0 10px rgba(22, 119, 255, 0.4) !important; }
+
+        /* 对深色背景页面(第2、4页)的环境色对比度补充优化：默认未激活状态用半透明白色，保证识别度 */
         .dot-nav-container.dark-bg .nav-dot:not(.active) { background-color: rgba(255, 255, 255, 0.25); }
         
         @media (max-width: 768px) {
@@ -740,6 +760,9 @@
                 <div class="line-v" id="line-v"></div>
                 <div class="line-h" id="line-h"></div>
             </div>
+            
+            <!-- 重新设计的动画点与击中波纹，提升 z-index 到 100 确保始终在文字上方显示 -->
+            <div class="line-cross" id="line-cross"></div>
 
             <div class="absolute top-10 left-10 md:left-16 z-20 flex items-center gap-3 delayed-fade">
                 <div class="w-8 h-8 rounded-full bg-brand-black flex items-center justify-center text-white font-black text-sm shadow-md">W.</div>
@@ -752,23 +775,21 @@
                         <img src="./image/contact-profile.png" alt="Designer Portrait" class="w-full h-full object-cover">
                     </div>
                     <div class="relative z-50">
-                        <h1 id="main-title" class="text-5xl md:text-6xl font-black leading-tight mb-6 tracking-wider text-brand-black origin-center opacity-0 w-max relative">
+                        <h1 id="main-title" class="text-5xl md:text-6xl font-black leading-tight mb-6 tracking-wider text-brand-black origin-center opacity-0 w-max">
                             期待与您的<br>
                             <span class="text-brand-black relative inline-block tracking-widest mt-2">
                                 深度交流
                                 <svg class="absolute w-full h-3 -bottom-1 left-0 text-brand-yellow opacity-60 -z-10" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M0 10 Q 50 20 100 10" fill="none" stroke="currentColor" stroke-width="6"/></svg>
                             </span>
-                            <!-- 核心修复：全屏幕只有一个点。它原生呆在文字内部，跟随文字一起运动 -->
-                            <span id="the-yellow-dot" class="absolute right-[-24px] bottom-3 w-4 h-4 bg-brand-yellow rounded-full z-[100]"></span>
                         </h1>
                         <div class="delayed-fade">
                             <h2 class="text-xl text-gray-600 font-bold mb-8 flex items-center gap-3 relative z-10">UI/UX 设计师 <span class="w-1.5 h-1.5 rounded-full bg-brand-yellow"></span> 产品体验架构师</h2>
                             <p class="text-gray-500 text-lg leading-[1.8] mb-12 font-medium relative z-10">
                                 拥有<strong class="text-brand-black">动画设计背景</strong>，使我对动效反馈与交互微细节有着更敏锐的直觉。目前专注于 B端复杂业务系统与 C端创新场景的体验重构，深信设计不仅是视觉表达，更是解决商业痛点、驱动产品增长的核心力量。<br><br>期待加入您的团队，共同创造极致的产品体验。
                             </p>
-                            <!-- 移除了原本在本地容易被拦截的 download 属性，改为 target="_blank" 新标签页打开，路径改为最简单的同级目录读取 -->
-                            <a href="./resume.pdf" target="_blank" rel="noopener noreferrer" class="inline-flex w-max group bg-brand-black text-white px-8 py-5 md:py-6 rounded-full font-bold shadow-xl hover:bg-brand-yellow hover:text-brand-black hover:shadow-brand-yellow/30 transition-all duration-300 items-center gap-3 hover:-translate-y-1 relative z-10 text-lg decoration-transparent outline-none">
-                                <i class="fa-solid fa-file-pdf group-hover:animate-bounce"></i> 预览 / 下载 PDF 简历
+                            <!-- ✅ 修改此处：将 button 替换为了可以触发下载的 a 标签 -->
+                            <a href="./resume.pdf" download="resume.pdf" target="_blank" class="group bg-brand-black text-white px-8 py-5 md:py-6 rounded-full font-bold shadow-xl hover:bg-brand-yellow hover:text-brand-black hover:shadow-brand-yellow/30 transition-all duration-300 inline-flex items-center gap-3 hover:-translate-y-1 relative z-10 text-lg decoration-transparent">
+                                <i class="fa-solid fa-cloud-arrow-down group-hover:animate-bounce"></i> 下载 PDF 完整简历
                             </a>
                         </div>
                     </div>
@@ -776,8 +797,7 @@
 
                 <div class="w-full md:w-[450px] lg:w-[480px] flex flex-col gap-6 relative z-10">
                     <div class="text-sm font-bold tracking-widest text-gray-400 uppercase mb-1 relative w-max delayed-fade ml-4">
-                        <!-- Contact Me 左侧的目标槽位 -->
-                        <div id="dot-destination" class="absolute top-1/2 -translate-y-1/2 -left-4 w-2 h-2 shrink-0 rounded-full bg-brand-yellow opacity-0"></div>
+                        <div id="contact-dot-real" class="absolute top-1/2 -translate-y-1/2 -left-4 w-2 h-2 rounded-full bg-brand-yellow opacity-0 transition-opacity duration-300 shadow-[0_0_8px_rgba(239,197,25,0.6)]"></div>
                         Contact Me
                     </div>
                     <div class="glass-card rounded-2xl p-6 flex items-center justify-between cursor-pointer group interactive-card delayed-fade" onclick="window.copyToClipboard('645894326@qq.com')">
@@ -985,7 +1005,210 @@
         });
 
 
-        // ================= 第6页 (含动画) 动画与业务逻辑 =================
+        // ================= 页面 2 (02) 内部业务逻辑 =================
+        {
+            function autoScalePhone() {
+                const maxHeight = window.innerHeight * 0.85; 
+                const maxWidth = window.innerWidth * 0.45; 
+                const scaleH = maxHeight / 848; const scaleW = maxWidth / 400;
+                const finalScale = Math.min(scaleH, scaleW, 0.9);
+                document.documentElement.style.setProperty('--phone-scale', finalScale);
+            }
+            window.addEventListener('resize', autoScalePhone);
+            autoScalePhone();
+
+            document.querySelector('.get-code-btn').addEventListener('click', e => { e.stopPropagation(); alert('验证码已发送'); });
+            document.querySelector('.login-btn').addEventListener('click', e => { e.stopPropagation(); alert('登录成功！'); });
+            document.querySelector('.checkbox').addEventListener('click', function(e) {
+                e.stopPropagation();
+                this.style.background = (this.style.background === 'rgb(49, 210, 111)' || this.style.background === '') ? '#f7f7f8' : '#31d26f';
+            });
+        }
+
+
+        // ================= 页面 3 (03) 内部业务逻辑 =================
+        {
+            const demoBtn = document.getElementById('demo-btn-3');
+            const chatBox = document.getElementById('chat-box-3');
+            const introPanel = document.getElementById('intro-panel-3');
+            const portfolioPanel = document.getElementById('portfolio-panel-3');
+            const resetDemoBtn = document.getElementById('reset-demo-btn-3');
+            let chatStep = 0;
+            const script = [
+                { user: "Hi, I want to check my bag.", ai: "Sure, I can help you with that. Could you please place your luggage on the scale? Do you have any fragile items or electronics inside?", btnText: "<i class='fa-solid fa-microphone'></i> 模拟回复: No, I don't." },
+                { user: "No, I don't.", ai: "Perfect. Your bag is checked through to your final destination. Here is your boarding pass and passport. Your flight boards at Gate 12. Have a wonderful flight!", btnText: "<i class='fa-solid fa-arrow-right-arrow-left'></i> 查看更多交互设计" }
+            ];
+            const initialChatHTML = chatBox.innerHTML;
+            function scrollToBottom() { chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' }); }
+
+            function expandPortfolio() {
+                introPanel.classList.remove('w-[480px]', 'max-w-[480px]', 'opacity-100');
+                introPanel.classList.add('w-0', 'max-w-0', 'opacity-0');
+                portfolioPanel.classList.remove('w-0', 'max-w-0', 'opacity-0');
+                portfolioPanel.classList.add('w-[750px]', 'max-w-[750px]', 'opacity-100');
+            }
+
+            function resetLayout() {
+                portfolioPanel.classList.remove('w-[750px]', 'max-w-[750px]', 'opacity-100');
+                portfolioPanel.classList.add('w-0', 'max-w-0', 'opacity-0');
+                introPanel.classList.remove('w-0', 'max-w-0', 'opacity-0');
+                introPanel.classList.add('w-[480px]', 'max-w-[480px]', 'opacity-100');
+                setTimeout(() => {
+                    chatBox.innerHTML = initialChatHTML; chatStep = 0;
+                    demoBtn.innerHTML = "<i class='fa-solid fa-microphone'></i> 点击模拟回复";
+                    demoBtn.classList.add('bg-brand-yellow', 'text-brand-black', 'shadow-glow', 'pulse-border');
+                    demoBtn.classList.remove('bg-brand-black', 'text-white');
+                    demoBtn.disabled = false;
+                }, 400); 
+            }
+            resetDemoBtn.addEventListener('click', resetLayout);
+
+            demoBtn.addEventListener('click', () => {
+                if (chatStep >= script.length) { expandPortfolio(); return; }
+                const currentScript = script[chatStep];
+                demoBtn.disabled = true; demoBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 语音识别中...';
+                demoBtn.classList.remove('pulse-border', 'shadow-glow'); demoBtn.classList.add('opacity-80');
+
+                const userMsg = document.createElement('div');
+                userMsg.className = "flex gap-3 text-brand-black justify-end w-full mt-2 mb-2 fade-in-up-3";
+                userMsg.innerHTML = `<div class="bg-brand-black text-white p-3.5 rounded-2xl rounded-tr-none shadow-md text-[13px] max-w-[82%] leading-relaxed">${currentScript.user}</div><div class="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-gray-500 shadow-sm mt-1 border border-white">Me</div>`;
+                chatBox.appendChild(userMsg); scrollToBottom();
+
+                setTimeout(() => {
+                    demoBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> AI 思考中...';
+                    const typingId = 'typing-' + Date.now();
+                    const typingMsg = document.createElement('div');
+                    typingMsg.id = typingId; typingMsg.className = "flex gap-3 text-brand-black mt-2 mb-2 fade-in-up-3";
+                    typingMsg.innerHTML = `<img src="./image/ui-avatar-coco.png" class="w-8 h-8 rounded-full flex-shrink-0 shadow-sm mt-1 border border-white object-cover bg-brand-yellow/10"><div class="bg-white px-4 py-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1.5 h-11 border border-gray-100"><div class="w-1.5 h-1.5 bg-gray-400 rounded-full typing-dot"></div><div class="w-1.5 h-1.5 bg-gray-400 rounded-full typing-dot"></div><div class="w-1.5 h-1.5 bg-gray-400 rounded-full typing-dot"></div></div>`;
+                    chatBox.appendChild(typingMsg); scrollToBottom();
+
+                    setTimeout(() => {
+                        document.getElementById(typingId).remove();
+                        const aiMsg = document.createElement('div');
+                        aiMsg.className = "flex gap-3 text-brand-black mb-2 fade-in-up-3";
+                        aiMsg.innerHTML = `<img src="./image/ui-avatar-coco.png" class="w-8 h-8 rounded-full flex-shrink-0 shadow-sm mt-1 border border-white object-cover bg-brand-yellow/10"><div class="bg-white p-3.5 rounded-2xl rounded-tl-none shadow-sm text-[13px] max-w-[85%] border border-gray-100 leading-relaxed">${currentScript.ai}</div>`;
+                        chatBox.appendChild(aiMsg); scrollToBottom();
+                        
+                        chatStep++;
+                        demoBtn.innerHTML = currentScript.btnText; demoBtn.classList.remove('opacity-80'); demoBtn.disabled = false;
+                        if (chatStep >= script.length) { demoBtn.classList.remove('bg-brand-yellow', 'text-brand-black'); demoBtn.classList.add('bg-brand-black', 'text-white', 'pulse-border'); } 
+                        else { demoBtn.classList.add('pulse-border'); }
+                    }, 1200); 
+                }, 400); 
+            });
+
+            window.addEventListener('load', () => {
+                if (sessionStorage.getItem('autoExpandPortfolio') === 'true' || window.location.hash === '#page-3') {
+                    const scrollContainer = document.querySelector('.scroll-container');
+                    if (scrollContainer) { scrollContainer.scrollTo({ top: 2 * window.innerHeight, behavior: 'auto' }); }
+                    updateNavDots(3); activeSection = 3;
+                    setTimeout(() => {
+                        expandPortfolio(); 
+                        sessionStorage.removeItem('autoExpandPortfolio');
+                        if (window.location.hash === '#page-3') { history.replaceState(null, null, ' '); }
+                    }, 500); 
+                }
+            });
+        }
+
+
+        // ================= 页面 5 (05) 内部业务逻辑 =================
+        {
+            const demoBtn = document.getElementById('demo-btn-5');
+            const overlay = document.getElementById('overlay-5');
+            const chartSkeleton = document.getElementById('chart-skeleton-5');
+            const realChart = document.getElementById('real-chart-5');
+            const counters = document.querySelectorAll('.counter');
+            const lineDraw = document.querySelector('.line-draw');
+            const areaFades = document.querySelectorAll('.area-fade');
+            const introPanel = document.getElementById('intro-panel-5');
+            const portfolioPanel = document.getElementById('portfolio-panel-5');
+            const resetDemoBtn = document.getElementById('reset-demo-btn-5');
+            let isCompleted = false;
+
+            function animateValue(obj, start, end, duration, suffix = "") {
+                let startTimestamp = null;
+                const step = (timestamp) => {
+                    if (!startTimestamp) startTimestamp = timestamp;
+                    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                    const easeProgress = 1 - Math.pow(1 - progress, 4);
+                    let current = (easeProgress * (end - start) + start).toFixed(1);
+                    if (current.endsWith('.0') && !end.toString().includes('.')) { current = Math.round(current); }
+                    obj.innerHTML = current + suffix;
+                    if (progress < 1) { window.requestAnimationFrame(step); } else { obj.innerHTML = end + suffix; }
+                };
+                window.requestAnimationFrame(step);
+            }
+
+            function expandPortfolio() {
+                introPanel.classList.remove('w-[420px]', 'max-w-[420px]', 'opacity-100'); introPanel.classList.add('w-0', 'max-w-0', 'opacity-0');
+                portfolioPanel.classList.remove('w-0', 'max-w-0', 'opacity-0'); portfolioPanel.classList.add('w-[500px]', 'max-w-[500px]', 'opacity-100');
+            }
+
+            function resetLayout() {
+                isCompleted = false;
+                portfolioPanel.classList.remove('w-[500px]', 'max-w-[500px]', 'opacity-100'); portfolioPanel.classList.add('w-0', 'max-w-0', 'opacity-0');
+                introPanel.classList.remove('w-0', 'max-w-0', 'opacity-0'); introPanel.classList.add('w-[420px]', 'max-w-[420px]', 'opacity-100');
+                demoBtn.innerHTML = '<i class="fa-solid fa-play text-xs"></i> 运行数据分析';
+                demoBtn.classList.remove('bg-green-600', 'hover:bg-green-700'); demoBtn.classList.add('bg-brand-blue', 'hover:bg-blue-600'); demoBtn.disabled = false;
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+                chartSkeleton.classList.remove('hidden'); realChart.classList.add('hidden');
+                if (lineDraw) lineDraw.classList.remove('active');
+                areaFades.forEach(el => el.classList.remove('active'));
+                counters.forEach(counter => { counter.innerHTML = "0" + (counter.getAttribute('data-suffix') || ""); });
+            }
+
+            resetDemoBtn.addEventListener('click', resetLayout);
+
+            demoBtn.addEventListener('click', () => {
+                if (isCompleted) { expandPortfolio(); return; }
+                demoBtn.disabled = true; demoBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 正在拉取数据...'; demoBtn.classList.add('opacity-80');
+                setTimeout(() => {
+                    overlay.classList.add('opacity-0', 'pointer-events-none');
+                    chartSkeleton.classList.add('hidden'); realChart.classList.remove('hidden');
+                    counters.forEach(counter => {
+                        const target = parseFloat(counter.getAttribute('data-target'));
+                        const suffix = counter.getAttribute('data-suffix');
+                        animateValue(counter, 0, target, 1500, suffix);
+                    });
+                    setTimeout(() => {
+                        if (lineDraw) lineDraw.classList.add('active');
+                        areaFades.forEach(el => el.classList.add('active'));
+                    }, 50);
+                    setTimeout(() => {
+                        isCompleted = true;
+                        demoBtn.innerHTML = '报告生成完毕 <i class="fa-solid fa-arrow-right text-xs"></i>';
+                        demoBtn.classList.remove('opacity-80', 'bg-brand-blue', 'hover:bg-blue-600');
+                        demoBtn.classList.add('bg-green-600', 'hover:bg-green-700'); demoBtn.disabled = false;
+                        setTimeout(() => { expandPortfolio(); }, 1200);
+                    }, 1600);
+                }, 800);
+            });
+
+            window.addEventListener('load', () => {
+                if (sessionStorage.getItem('autoExpandPortfolio5') === 'true' || window.location.hash === '#page-5-expanded') {
+                    const scrollContainer = document.querySelector('.scroll-container');
+                    if (scrollContainer) { scrollContainer.scrollTo({ top: 4 * window.innerHeight, behavior: 'auto' }); }
+                    updateNavDots(5); activeSection = 5;
+
+                    setTimeout(() => {
+                        expandPortfolio();
+                        overlay.classList.add('opacity-0', 'pointer-events-none');
+                        chartSkeleton.classList.add('hidden'); realChart.classList.remove('hidden');
+                        isCompleted = true;
+                        demoBtn.innerHTML = '报告生成完毕 <i class="fa-solid fa-arrow-right text-xs"></i>';
+                        demoBtn.classList.remove('opacity-80', 'bg-brand-blue', 'hover:bg-blue-600');
+                        demoBtn.classList.add('bg-green-600', 'hover:bg-green-700'); demoBtn.disabled = false;
+
+                        sessionStorage.removeItem('autoExpandPortfolio5');
+                        if (window.location.hash === '#page-5-expanded') { history.replaceState(null, null, ' '); }
+                    }, 500);
+                }
+            });
+        }
+
+
+        // ================= 页面 6 (含动画) 动画与业务逻辑 =================
         {
             function playSection6Animation() {
                 const s6 = document.querySelector('.section-6');
@@ -994,123 +1217,138 @@
                 const bgPlanes = document.getElementById('bg-planes');
                 const lineV = document.getElementById('line-v');
                 const lineH = document.getElementById('line-h');
-                const dot = document.getElementById('the-yellow-dot'); // 我们唯一且真实的小黄点
-                const dest = document.getElementById('dot-destination');
+                const lineCross = document.getElementById('line-cross'); 
+                const contactDotReal = document.getElementById('contact-dot-real'); 
                 const delayedElements = document.querySelectorAll('.section-6 .delayed-fade');
                 
-                // --- 1. 初始化重置状态 ---
-                delayedElements.forEach(el => { el.style.animation = 'none'; el.style.opacity = '0'; });
-                dest.style.opacity = '0';
-                lineV.classList.remove('draw-v');
-                lineH.classList.remove('draw-h');
-                bgDots.style.opacity = '0';
-                bgPlanes.style.opacity = '0';
-
-                // 如果点之前飞出去了，把它重新放回标题文字里
-                if (dot.parentElement !== title) {
-                    title.appendChild(dot);
-                }
-                // 清理内联样式，恢复原生附着状态
-                dot.style = '';
-                dot.className = "absolute right-[-24px] bottom-3 w-4 h-4 bg-brand-yellow rounded-full z-[100]";
-
-                // 将标题强制复位到正常状态，以便计算它在屏幕中心的精确坐标
+                const sectionRect = s6.getBoundingClientRect();
+                
+                // 还原大标题到默认状态以计算原始尺寸
                 title.style.transition = 'none';
                 title.style.transform = 'translate(0px, 0px) scale(1)';
-                title.style.opacity = '1';
-                void title.offsetWidth; // 触发重绘
+                const rect = title.getBoundingClientRect();
 
-                const sectionRect = s6.getBoundingClientRect();
-                const originalTitleRect = title.getBoundingClientRect();
-                const titleCenterX = (originalTitleRect.left - sectionRect.left) + originalTitleRect.width / 2;
-                const titleCenterY = (originalTitleRect.top - sectionRect.top) + originalTitleRect.height / 2;
+                // 1. 提前计算最终“Contact Me”固定小圆点的相对坐标
+                const parentFade = contactDotReal.closest('.delayed-fade');
+                const oldTrans = parentFade.style.transition;
+                parentFade.style.transition = 'none';
+                parentFade.style.transform = 'translateY(0)';
+                parentFade.style.animation = 'none';
+                parentFade.style.opacity = '1';
+                
+                const finalRect = contactDotReal.getBoundingClientRect();
+                const finalX = finalRect.left - sectionRect.left + finalRect.width / 2;
+                const finalY = finalRect.top - sectionRect.top + finalRect.height / 2;
+                
+                parentFade.style.transform = '';
+                parentFade.style.opacity = '';
+                parentFade.style.animation = '';
+                parentFade.style.transition = oldTrans;
+
+                // 计算居中下落的起始参数
+                const titleCenterX = (rect.left - sectionRect.left) + rect.width / 2;
+                const titleCenterY = (rect.top - sectionRect.top) + rect.height / 2;
 
                 const startX = (window.innerWidth / 2) - titleCenterX;
                 const targetY = (window.innerHeight / 2) - titleCenterY;
-                const dropStartY = targetY - 120; // 从上方 120px 处落下
+                const dropStartY = targetY - 120; // 从高处下坠高度
 
-                // 将标题移动到屏幕中央上方准备下坠
+                // 计算小黄点在大标题右上角的固定相对偏移 (考虑到放大1.4倍的情况，调整位置以防止遮挡文字)
+                const dotOffsetX = (rect.width * 1.4 / 2) + 12;
+                const dotOffsetY = -(rect.height * 1.4 / 2) + 16;
+
+                // 强制重置小黄点样式 (T=0)
+                lineCross.style.transition = 'none';
+                lineCross.style.left = `${titleCenterX + startX + dotOffsetX}px`;
+                lineCross.style.top = `${titleCenterY + dropStartY + dotOffsetY}px`;
+                lineCross.style.opacity = '0';
+                lineCross.style.backgroundColor = '#EFC519';
+                lineCross.style.boxShadow = '0 0 15px 2px rgba(239, 197, 25, 0.6)';
+                lineCross.style.transform = 'translate(-50%, -50%) scale(1)';
+                
+                // 固定真实节点默认隐藏，禁止自带 transition
+                contactDotReal.style.transition = 'none';
+                contactDotReal.style.opacity = '0';
+
                 title.style.transform = `translate(${startX}px, ${dropStartY}px) scale(1.4)`;
                 title.style.opacity = '0';
 
+                // 开始动画序列
                 setTimeout(() => {
-                    // 阶段一：小黄点跟随着标题一起下坠 (因为小黄点原生就在 DOM 里，这步完美同步)
+                    // 阶段一：大标题与小黄点一起下坠
                     title.style.transition = 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
                     title.style.transform = `translate(${startX}px, ${targetY}px) scale(1.4)`;
                     title.style.opacity = '1';
+                    
+                    lineCross.style.transition = 'top 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease';
+                    lineCross.style.top = `${titleCenterY + targetY + dotOffsetY}px`;
+                    lineCross.style.opacity = '1'; // 伴随下坠显现
 
                     setTimeout(() => {
-                        // 阶段二：受力回弹向上 (跳跃一次)
-                        title.style.transform = `translate(${startX}px, ${targetY - 20}px) scale(1.45)`;
+                        // 阶段二：弹跳一次 (向上弹起)
+                        title.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                        title.style.transform = `translate(${startX}px, ${targetY - 20}px) scale(1.4)`;
+                        
+                        lineCross.style.transition = 'top 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.3s ease, box-shadow 0.3s ease';
+                        lineCross.style.top = `${titleCenterY + targetY - 20 + dotOffsetY}px`;
+                        lineCross.style.transform = 'translate(-50%, -50%) scale(1.3)'; // 弹起时蓄力放大
+                        lineCross.style.boxShadow = '0 0 25px 5px rgba(239, 197, 25, 0.8)';
+                        
+                        // 背景线条与网格显现
                         bgDots.style.opacity = '1'; 
                         bgPlanes.style.opacity = '1';
                         lineV.classList.add('draw-v'); 
                         lineH.classList.add('draw-h');
-                        
+
                         setTimeout(() => {
-                            // 阶段三：回弹落下。此时大标题将完全停止运动。
+                            // 阶段二：弹跳一次 (向下回落)
+                            title.style.transition = 'all 0.25s cubic-bezier(0.47, 0, 0.74, 0.71)';
                             title.style.transform = `translate(${startX}px, ${targetY}px) scale(1.4)`;
+                            
+                            lineCross.style.transition = 'top 0.25s cubic-bezier(0.47, 0, 0.74, 0.71), transform 0.25s ease';
+                            lineCross.style.top = `${titleCenterY + targetY + dotOffsetY}px`;
+                            lineCross.style.transform = 'translate(-50%, -50%) scale(0.9)'; // 落地微缩积蓄力量
 
                             setTimeout(() => {
-                                // --- 阶段四：物理剥离与独立飞行 ---
-                                // 此时文字已经彻底静止。我们精确抓取它在屏幕上的绝对位置
-                                const dotRect = dot.getBoundingClientRect();
-
-                                // 精确计算 Contact Me 目标槽位坐标 (剔除父级 opacity 容器偏移影响)
-                                const destParentFade = dest.closest('.delayed-fade');
-                                const oldTransform = destParentFade.style.transform;
-                                destParentFade.style.transform = 'translateY(0)';
-                                const destRect = dest.getBoundingClientRect();
-                                destParentFade.style.transform = oldTransform;
-
-                                // 将点从 <h1> 中拔出，放到 <body> 最外层，从而完全免疫其他容器的 transform 影响
-                                document.body.appendChild(dot);
-                                dot.style.position = 'fixed'; // 固定在浏览器视口绝对坐标系
-                                dot.style.left = `${dotRect.left}px`;
-                                dot.style.top = `${dotRect.top}px`;
-                                dot.style.width = `${dotRect.width}px`;
-                                dot.style.height = `${dotRect.height}px`;
-                                dot.style.margin = '0';
-                                dot.style.transform = 'none';
-                                dot.style.transition = 'none';
-
-                                // 强制浏览器重绘，记录当前静止坐标
-                                void dot.offsetWidth;
-
-                                // 标题飞回左边正常位置
+                                // 阶段三：脱离标题，缩放并射向 "Contact Me" 的左前方
+                                lineCross.style.transition = 'left 0.5s cubic-bezier(0.5, 0, 0.2, 1), top 0.5s cubic-bezier(0.5, 0, 0.2, 1), transform 0.5s ease';
+                                lineCross.style.left = `${finalX}px`;
+                                lineCross.style.top = `${finalY}px`;
+                                lineCross.style.transform = 'translate(-50%, -50%) scale(1.5)'; // 飞行时拉长/放大
+                                
+                                // 大标题回归页面常规流原位
                                 title.style.transition = 'all 0.8s cubic-bezier(0.25, 1, 0.5, 1)';
                                 title.style.transform = `translate(0px, 0px) scale(1)`;
 
-                                // 实体点独立飞往目标并缩小为 8px
-                                dot.style.transition = 'left 0.6s cubic-bezier(0.5, 0, 0.2, 1), top 0.6s cubic-bezier(0.5, 0, 0.2, 1), width 0.6s ease, height 0.6s ease';
-                                dot.style.left = `${destRect.left}px`;
-                                dot.style.top = `${destRect.top}px`;
-                                dot.style.width = `${destRect.width}px`;
-                                dot.style.height = `${destRect.height}px`;
-
                                 setTimeout(() => {
-                                    // 阶段五：完美落位！
-                                    dot.style.opacity = '0';  // 隐藏飞行的点
-                                    dest.style.opacity = '1'; // 亮起目标槽位的点 (视觉无缝交接)
+                                    // 阶段四：击中效果，水波纹，无缝衔接固定点
+                                    lineCross.style.transform = 'translate(-50%, -50%) scale(1)'; // 击中收缩回真实尺寸
+                                    lineCross.style.boxShadow = 'none';
+                                    
+                                    // 视觉无缝替换为真实DOM节点
+                                    contactDotReal.style.opacity = '1';
+                                    lineCross.style.opacity = '0';
+                                    
+                                    // 将真实节点自带的 transition 恢复
+                                    setTimeout(() => { contactDotReal.style.transition = ''; }, 50);
 
-                                    // 物理水波纹激荡 (水波纹同样建立在绝对固定坐标系，确保100%命中槽位)
+                                    // 生成波纹扩散的物理击打效果
                                     const ripple = document.createElement('div');
                                     ripple.className = 'hit-ripple';
-                                    ripple.style.left = `${destRect.left + destRect.width / 2}px`;
-                                    ripple.style.top = `${destRect.top + destRect.height / 2}px`;
-                                    document.body.appendChild(ripple);
+                                    ripple.style.left = `${finalX}px`;
+                                    ripple.style.top = `${finalY}px`;
+                                    s6.appendChild(ripple);
                                     setTimeout(() => ripple.remove(), 600);
 
-                                    // 激荡出其余所有联系方式卡片
+                                    // 右侧文字和名片伴随回弹力激荡出现 (Pop In)
                                     delayedElements.forEach((el, idx) => { 
                                         el.style.animation = `popInHit 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards ${idx * 0.05}s`; 
                                     });
-
-                                }, 600); // 飞行动画时长 0.6s
-                            }, 200); // 等待大标题完全落稳静止
-                        }, 150); // 跳跃向上时长
-                    }, 600); // 初始下坠时长
-                }, 50);
+                                }, 500); // 飞行耗时 500ms
+                            }, 250); // 下落完成等 250ms
+                        }, 300); // 弹起完成等 300ms
+                    }, 600); // 初始下坠完成等 600ms
+                }, 100);
             }
 
             document.querySelectorAll('.interactive-card').forEach(card => {
